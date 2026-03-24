@@ -41,7 +41,12 @@ i made and tested the mod wiht a quest 3.
 ## Installation (prebuilt)
 
 1. Install BepInEx 5 into your Ravenfield folder (`<Steam>/steamapps/common/Ravenfield/`).
-2. Copy `RavenfieldVRMod.dll` into `BepInEx/plugins/`.
+2. Download all DLLs from the [Releases](https://github.com/GDani31/ravenfield-vr-mod/releases) tab and place them:
+   - `RavenfieldVRMod.dll` → `BepInEx/plugins/`
+   - `Unity.XR.Management.dll` → `ravenfield_Data/Managed/`
+   - `Unity.XR.OpenVR.dll` → `ravenfield_Data/Managed/`
+   - `XRSDKOpenVR.dll` → `ravenfield_Data/Plugins/x86_64/`
+   - `openvr_api.dll` → `ravenfield_Data/Plugins/x86_64/`
 3. Launch Ravenfield with SteamVR running.
 
 ## Building from source
