@@ -41,7 +41,13 @@ i made and tested the mod wiht a quest 3.
 ## Installation (prebuilt)
 
 1. Install BepInEx 5 into your Ravenfield folder (`<Steam>/steamapps/common/Ravenfield/`).
-2. Copy `RavenfieldVRMod.dll` into `BepInEx/plugins/`.
+2. Download all files from the [Releases](https://github.com/GDani31/ravenfield-vr-mod/releases) tab and place them:
+   - `RavenfieldVRMod.dll` → `BepInEx/plugins/`
+   - `Unity.XR.Management.dll` → `ravenfield_Data/Managed/`
+   - `Unity.XR.OpenVR.dll` → `ravenfield_Data/Managed/`
+   - `XRSDKOpenVR.dll` → `ravenfield_Data/Plugins/x86_64/`
+   - `openvr_api.dll` → `ravenfield_Data/Plugins/x86_64/`
+   - `UnitySubsystemsManifest.json` → `ravenfield_Data/UnitySubsystems/XRSDKOpenVR/` (create the folders if they don't exist)
 3. Launch Ravenfield with SteamVR running.
 
 ## Building from source
@@ -53,21 +59,23 @@ steamapps/common/Ravenfield/
 ├── BepInEx/
 ├── ravenfield_Data/
 │   └── Managed/          ← Unity + game DLLs
-└── RavenfieldVRMod/      ← this repo
+└── ravenfield-vr-mod/    ← this repo
     └── RavenfieldVRMod.csproj
 ```
 
 1. Clone this repo into your Ravenfield install directory:
    ```
    cd "<Steam>/steamapps/common/Ravenfield"
-   git clone https://github.com/GDani31/ravenfield-vr-mod.git RavenfieldVRMod
+   git clone https://github.com/GDani31/ravenfield-vr-mod.git
    ```
 
 2. Build:
    ```
-   cd RavenfieldVRMod
+   cd ravenfield-vr-mod
    dotnet build -c Release
    ```
+
+   The first build automatically downloads and compiles the required VR dependencies (Unity XR Management, OpenVR XR Plugin). Subsequent builds skip this step.
 
    The post-build step automatically copies the DLL to `BepInEx/plugins/`.
 

@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <AssemblyName>Unity.XR.Management</AssemblyName>
+    <RootNamespace>UnityEngine.XR.Management</RootNamespace>
+    <LangVersion>9.0</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <ManagedDir>..\..\..\ravenfield_Data\Managed\</ManagedDir>
+    <NoWarn>CS0649;CS0618;CS0067</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\package\Runtime\XRGeneralSettings.cs" />
+    <Compile Include="..\package\Runtime\XRLoader.cs" />
+    <Compile Include="..\package\Runtime\XRLoaderHelper.cs" />
+    <Compile Include="..\package\Runtime\XRConfigurationData.cs" />
+    <Compile Include="..\package\Runtime\XRManagementAnalytics.cs" />
+    <!-- XRManagerSettings.cs patched locally to remove editor-only usings -->
+    <Compile Include="XRManagerSettings.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="UnityEngine">
+      <HintPath>$(ManagedDir)UnityEngine.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(ManagedDir)UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.SubsystemsModule">
+      <HintPath>$(ManagedDir)UnityEngine.SubsystemsModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.XRModule">
+      <HintPath>$(ManagedDir)UnityEngine.XRModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+</Project>

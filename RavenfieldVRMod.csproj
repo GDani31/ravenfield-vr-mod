@@ -6,11 +6,71 @@
     <RootNamespace>RavenfieldVRMod</RootNamespace>
     <LangVersion>9.0</LangVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
 
     <GameDir>..\</GameDir>
     <ManagedDir>$(GameDir)ravenfield_Data\Managed\</ManagedDir>
     <BepInExDir>$(GameDir)BepInEx\</BepInExDir>
+    <PluginsDir>$(GameDir)ravenfield_Data\Plugins\x86_64\</PluginsDir>
+
+    <!-- VR dependency package URLs -->
+    <XRManagementUrl>https://download.packages.unity.com/com.unity.xr.management/-/com.unity.xr.management-4.4.0.tgz</XRManagementUrl>
+    <OpenVRPluginUrl>https://github.com/ValveSoftware/unity-xr-plugin/releases/download/v1.1.4/com.valvesoftware.unity.openvr-1.1.4.tgz</OpenVRPluginUrl>
   </PropertyGroup>
+
+  <!--
+    Automatically download, compile, and install the VR dependencies
+    (Unity.XR.Management, Unity.XR.OpenVR, native OpenVR DLLs) if missing.
+    Runs before reference resolution so the DLLs exist when MSBuild needs them.
+  -->
+  <Target Name="SetupVRDependencies" BeforeTargets="PrepareForBuild"
+          Condition="!Exists('$(ManagedDir)Unity.XR.Management.dll') Or !Exists('$(ManagedDir)Unity.XR.OpenVR.dll') Or !Exists('$(PluginsDir)XRSDKOpenVR.dll') Or !Exists('$(GameDir)ravenfield_Data\UnitySubsystems\XRSDKOpenVR\UnitySubsystemsManifest.json')">
+
+    <Message Text="VR dependencies missing — downloading and building..." Importance="high" />
+
+    <!-- 1. Download Unity XR Management package -->
+    <Exec Command="curl -sL -o libs\xr-management.tgz &quot;$(XRManagementUrl)&quot;"
+          Condition="!Exists('libs\package\Runtime\XRGeneralSettings.cs')" />
+    <Exec Command="tar xzf libs\xr-management.tgz -C libs"
+          Condition="!Exists('libs\package\Runtime\XRGeneralSettings.cs')" />
+
+    <!-- 2. Download Valve OpenVR XR Plugin -->
+    <MakeDir Directories="libs\openvr-package" Condition="!Exists('libs\openvr-package')" />
+    <Exec Command="curl -sL -o libs\openvr-xr-plugin.tgz &quot;$(OpenVRPluginUrl)&quot;"
+          Condition="!Exists('libs\openvr-package\package\Runtime\OpenVRLoader.cs')" />
+    <Exec Command="tar xzf libs\openvr-xr-plugin.tgz -C libs\openvr-package"
+          Condition="!Exists('libs\openvr-package\package\Runtime\OpenVRLoader.cs')" />
+
+    <!-- 3. Build Unity.XR.Management.dll from package source -->
+    <Exec Command="dotnet build libs\build-xr-management\Unity.XR.Management.csproj -c Release" />
+
+    <!-- 4. Build Unity.XR.OpenVR.dll from package source -->
+    <Exec Command="dotnet build libs\build-xr-openvr\Unity.XR.OpenVR.csproj -c Release" />
+
+    <!-- 5. Install managed DLLs into game Managed folder -->
+    <Copy SourceFiles="libs\build-xr-management\bin\Release\net472\Unity.XR.Management.dll"
+          DestinationFolder="$(ManagedDir)" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="libs\build-xr-openvr\bin\Release\net472\Unity.XR.OpenVR.dll"
+          DestinationFolder="$(ManagedDir)" SkipUnchangedFiles="true" />
+
+    <!-- 6. Install native VR DLLs into game Plugins folder -->
+    <Copy SourceFiles="libs\openvr-package\package\Runtime\x64\XRSDKOpenVR.dll"
+          DestinationFolder="$(PluginsDir)" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="libs\openvr-package\package\Runtime\x64\openvr_api.dll"
+          DestinationFolder="$(PluginsDir)" SkipUnchangedFiles="true" />
+
+    <!-- 7. Install XR subsystem manifest (required for Unity to discover the OpenVR display/input subsystems) -->
+    <MakeDir Directories="$(GameDir)ravenfield_Data\UnitySubsystems\XRSDKOpenVR" />
+    <Copy SourceFiles="libs\openvr-package\package\Runtime\UnitySubsystemsManifest.json"
+          DestinationFolder="$(GameDir)ravenfield_Data\UnitySubsystems\XRSDKOpenVR\" SkipUnchangedFiles="true" />
+
+    <Message Text="VR dependencies installed successfully." Importance="high" />
+  </Target>
+
+  <!-- Mod source files (exclude libs/) -->
+  <ItemGroup>
+    <Compile Include="*.cs" />
+  </ItemGroup>
 
   <!-- BepInEx / Harmony -->
   <ItemGroup>
