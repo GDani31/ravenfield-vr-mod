@@ -1,0 +1,13 @@
+# Downloaded packages
+*.tgz
+openvr_api.cs
+
+# Extracted packages (downloaded at build time)
+package/
+openvr-package/
+
+# Build outputs of helper projects
+build-xr-management/bin/
+build-xr-management/obj/
+build-xr-openvr/bin/
+build-xr-openvr/obj/

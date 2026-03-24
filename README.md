@@ -53,21 +53,23 @@ steamapps/common/Ravenfield/
 ├── BepInEx/
 ├── ravenfield_Data/
 │   └── Managed/          ← Unity + game DLLs
-└── RavenfieldVRMod/      ← this repo
+└── ravenfield-vr-mod/    ← this repo
     └── RavenfieldVRMod.csproj
 ```
 
 1. Clone this repo into your Ravenfield install directory:
    ```
    cd "<Steam>/steamapps/common/Ravenfield"
-   git clone https://github.com/GDani31/ravenfield-vr-mod.git RavenfieldVRMod
+   git clone https://github.com/GDani31/ravenfield-vr-mod.git
    ```
 
 2. Build:
    ```
-   cd RavenfieldVRMod
+   cd ravenfield-vr-mod
    dotnet build -c Release
    ```
+
+   The first build automatically downloads and compiles the required VR dependencies (Unity XR Management, OpenVR XR Plugin). Subsequent builds skip this step.
 
    The post-build step automatically copies the DLL to `BepInEx/plugins/`.
 
