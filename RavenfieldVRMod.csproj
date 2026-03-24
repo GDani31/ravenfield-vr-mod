@@ -24,7 +24,7 @@
     Runs before reference resolution so the DLLs exist when MSBuild needs them.
   -->
   <Target Name="SetupVRDependencies" BeforeTargets="PrepareForBuild"
-          Condition="!Exists('$(ManagedDir)Unity.XR.Management.dll') Or !Exists('$(ManagedDir)Unity.XR.OpenVR.dll') Or !Exists('$(PluginsDir)XRSDKOpenVR.dll')">
+          Condition="!Exists('$(ManagedDir)Unity.XR.Management.dll') Or !Exists('$(ManagedDir)Unity.XR.OpenVR.dll') Or !Exists('$(PluginsDir)XRSDKOpenVR.dll') Or !Exists('$(GameDir)ravenfield_Data\UnitySubsystems\XRSDKOpenVR\UnitySubsystemsManifest.json')">
 
     <Message Text="VR dependencies missing — downloading and building..." Importance="high" />
 
@@ -58,6 +58,11 @@
           DestinationFolder="$(PluginsDir)" SkipUnchangedFiles="true" />
     <Copy SourceFiles="libs\openvr-package\package\Runtime\x64\openvr_api.dll"
           DestinationFolder="$(PluginsDir)" SkipUnchangedFiles="true" />
+
+    <!-- 7. Install XR subsystem manifest (required for Unity to discover the OpenVR display/input subsystems) -->
+    <MakeDir Directories="$(GameDir)ravenfield_Data\UnitySubsystems\XRSDKOpenVR" />
+    <Copy SourceFiles="libs\openvr-package\package\Runtime\UnitySubsystemsManifest.json"
+          DestinationFolder="$(GameDir)ravenfield_Data\UnitySubsystems\XRSDKOpenVR\" SkipUnchangedFiles="true" />
 
     <Message Text="VR dependencies installed successfully." Importance="high" />
   </Target>
