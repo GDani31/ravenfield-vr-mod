@@ -23,7 +23,7 @@ namespace RavenfieldVRMod
         private static GameObject vrStatusOverlay;
 
         private static readonly int[] snapAngles = { 15, 30, 45, 60, 90 };
-        private static readonly int[] fovValues = { 15, 20, 25, 30, 40, 50, 60, 90 };
+        private static readonly int[] fovValues = { 70, 80, 90, 100, 110 };
         private static Text vrStatusText;
 
         // Standalone VR settings panel (WorldSpace, overlays Options content area in VR)

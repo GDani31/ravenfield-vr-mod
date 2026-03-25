@@ -130,7 +130,25 @@ namespace RavenfieldVRMod
                 // Ensure camera scale is always 1 (fixes "bigger" after vehicle exit)
                 cam.transform.localScale = Vector3.one;
 
-                cam.fieldOfView = (float)VRManager.VRFieldOfView;
+                // Apply FOV zoom via stereo projection matrices
+                // (Camera.fieldOfView is ignored in VR stereo mode)
+                if (cam.stereoEnabled)
+                {
+                    int fov = VRManager.VRFieldOfView;
+                    cam.ResetStereoProjectionMatrices();
+                    if (fov != 90)
+                    {
+                        float zoom = 90f / Mathf.Max(fov, 10f);
+                        for (int e = 0; e < 2; e++)
+                        {
+                            var eye = (Camera.StereoscopicEye)e;
+                            Matrix4x4 proj = cam.GetStereoProjectionMatrix(eye);
+                            proj[0, 0] *= zoom;
+                            proj[1, 1] *= zoom;
+                            cam.SetStereoProjectionMatrix(eye, proj);
+                        }
+                    }
+                }
 
                 if (FpsActorController.instance != null)
                 {

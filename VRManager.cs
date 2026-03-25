@@ -53,7 +53,7 @@ namespace RavenfieldVRMod
         }
         public static int VRFieldOfView
         {
-            get => PlayerPrefs.GetInt("vr_fov", 25);
+            get => PlayerPrefs.GetInt("vr_fov", 90);
             set { PlayerPrefs.SetInt("vr_fov", value); PlayerPrefs.Save(); }
         }
         public static bool LeftHanded
