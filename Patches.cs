@@ -325,6 +325,18 @@ namespace RavenfieldVRMod
         }
     }
 
+    // Re-apply HMD rotation AFTER FpsActorController positions/rotates the camera.
+    // Without this, turret/vehicle/boat camera systems override head tracking.
+    [HarmonyPatch(typeof(FpsActorController), "LateUpdate")]
+    static class FpsActorControllerLateUpdatePatch
+    {
+        static void Postfix()
+        {
+            if (!VRManager.IsVRActive) return;
+            VRCameraManager.ReapplyHMDPose();
+        }
+    }
+
     [HarmonyPatch(typeof(Options), "Awake")]
     static class OptionsAwakePatch
     {

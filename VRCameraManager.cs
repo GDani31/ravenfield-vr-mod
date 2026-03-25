@@ -290,7 +290,7 @@ namespace RavenfieldVRMod
                         // HUD → ScreenSpaceCamera with centered viewport for VR
                         canvas.renderMode = RenderMode.ScreenSpaceCamera;
                         canvas.worldCamera = cam;
-                        canvas.planeDistance = 50f;
+                        canvas.planeDistance = 3f;
 
                         // Create a centered viewport to pull edge-anchored elements inward
                         // (health, ammo, flags are anchored to screen edges — invisible in VR)
@@ -357,6 +357,31 @@ namespace RavenfieldVRMod
                         {
                             if (killCanvas.worldCamera == null || !killCanvas.worldCamera.isActiveAndEnabled)
                                 killCanvas.worldCamera = cam;
+                        }
+                    }
+                }
+                catch { }
+
+                // Ensure KillCamera canvas (death screen) is visible in VR
+                try
+                {
+                    if (KillCamera.instance != null)
+                    {
+                        Canvas killCamCanvas = KillCamera.instance.GetComponent<Canvas>()
+                            ?? KillCamera.instance.GetComponentInChildren<Canvas>();
+                        if (killCamCanvas != null)
+                        {
+                            if (killCamCanvas.renderMode == RenderMode.ScreenSpaceOverlay)
+                            {
+                                killCamCanvas.renderMode = RenderMode.ScreenSpaceCamera;
+                                killCamCanvas.worldCamera = cam;
+                                killCamCanvas.planeDistance = 3f;
+                            }
+                            else if (killCamCanvas.renderMode == RenderMode.ScreenSpaceCamera)
+                            {
+                                if (killCamCanvas.worldCamera == null || !killCamCanvas.worldCamera.isActiveAndEnabled)
+                                    killCamCanvas.worldCamera = cam;
+                            }
                         }
                     }
                 }
