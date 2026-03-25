@@ -436,9 +436,10 @@ namespace RavenfieldVRMod
                         ExecuteEvents.Execute(downHandler, pointerData, ExecuteEvents.pointerDownHandler);
                     }
 
-                    // Manual invoke for common components
-                    // Check Toggle first — pointer events above already flip it,
-                    // so don't manually flip again (would double-flip back to original)
+                    // Log what was clicked — ExecuteEvents above already handles
+                    // the actual click via pointerClickHandler + bubble-up.
+                    // Do NOT manually invoke btn.onClick here — that double-fires
+                    // and causes toggle settings to flip ON then immediately back OFF.
                     Toggle toggle = hitObj.GetComponentInParent<Toggle>();
                     Button btn = hitObj.GetComponentInParent<Button>();
                     if (toggle != null && toggle.interactable)
@@ -447,8 +448,7 @@ namespace RavenfieldVRMod
                     }
                     else if (btn != null && btn.interactable)
                     {
-                        btn.onClick.Invoke();
-                        Plugin.Log.LogInfo($"VR click: {btn.name}");
+                        Plugin.Log.LogInfo($"VR click: Button {btn.name}");
                     }
                     else
                     {

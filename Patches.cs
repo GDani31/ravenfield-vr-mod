@@ -76,6 +76,7 @@ namespace RavenfieldVRMod
             }
 
             VRControllers.IsOptionsOpen = false;
+            VROptionsUI.HideVRSettingsPanel();
 
             // Force unpause
             Time.timeScale = 1f;
@@ -84,7 +85,7 @@ namespace RavenfieldVRMod
         }
     }
 
-    // Map (StrategyUi) → WorldSpace when shown, revert when hidden
+    // Map (StrategyUi) → body-tracked WorldSpace
     [HarmonyPatch(typeof(StrategyUi), "Show")]
     static class StrategyUiShowPatch
     {
@@ -97,8 +98,8 @@ namespace RavenfieldVRMod
                 canvas = StrategyUi.instance.GetComponentInChildren<Canvas>();
             if (canvas == null) return;
 
-            VRCanvasHelper.ConvertCanvasToWorldSpace(canvas, 2.5f);
-            Plugin.Log.LogInfo("VR: Map converted to WorldSpace.");
+            VRCanvasHelper.ConvertCanvasToBodyTracked(canvas, 2.5f);
+            Plugin.Log.LogInfo("VR: Map body-tracked.");
         }
     }
 
@@ -113,11 +114,14 @@ namespace RavenfieldVRMod
             if (canvas == null)
                 canvas = StrategyUi.instance.GetComponentInChildren<Canvas>();
             if (canvas != null)
+            {
+                VRCanvasHelper.StopBodyTracking(canvas);
                 canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            }
         }
     }
 
-    // Loadout/weapon selection → WorldSpace (static, not head-locked)
+    // Loadout/weapon selection → body-tracked WorldSpace
     [HarmonyPatch(typeof(LoadoutUi), "Show")]
     static class LoadoutUiShowPatch
     {
@@ -127,8 +131,10 @@ namespace RavenfieldVRMod
             Canvas canvas = LoadoutUi.instance.GetComponent<Canvas>();
             if (canvas == null)
                 canvas = LoadoutUi.instance.GetComponentInChildren<Canvas>();
-            VRCanvasHelper.ConvertCanvasToWorldSpace(canvas, 3.5f);
-            Plugin.Log.LogInfo("VR: Loadout converted to WorldSpace.");
+            if (canvas == null) return;
+
+            VRCanvasHelper.ConvertCanvasToBodyTracked(canvas, 3f);
+            Plugin.Log.LogInfo("VR: Loadout body-tracked.");
         }
     }
 
@@ -142,7 +148,10 @@ namespace RavenfieldVRMod
             if (canvas == null)
                 canvas = LoadoutUi.instance.GetComponentInChildren<Canvas>();
             if (canvas != null)
+            {
+                VRCanvasHelper.StopBodyTracking(canvas);
                 canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            }
         }
     }
 
@@ -155,51 +164,21 @@ namespace RavenfieldVRMod
             VROptionsUI.RefreshToggleState();
             if (!VRManager.IsVRActive || Options.instance == null) return;
 
-            Canvas optCanvas = Options.instance.GetComponent<Canvas>();
-            if (optCanvas == null)
-            {
-                Plugin.Log.LogWarning("VR: Options has no Canvas component!");
-                return;
-            }
+            // Don't convert Options to WorldSpace — tab content doesn't render
+            // and the dark canvas panel blocks raycasts to the VR settings panel.
+            // Keep Options as ScreenSpaceOverlay (invisible in VR) and show
+            // the standalone VR settings panel instead.
+            VROptionsUI.ShowVRSettingsPanel();
+        }
+    }
 
-            Plugin.Log.LogInfo($"VR Options.Show: canvas={optCanvas.name} mode={optCanvas.renderMode} isRoot={optCanvas.isRootCanvas}");
-
-            // Log all child canvases
-            foreach (var cc in Options.instance.GetComponentsInChildren<Canvas>(true))
-            {
-                Plugin.Log.LogInfo($"  child canvas: {cc.name} mode={cc.renderMode} isRoot={cc.isRootCanvas} enabled={cc.enabled} go.active={cc.gameObject.activeInHierarchy}");
-            }
-
-            // Log video options specifically
-            if (Options.instance.videoOptions != null)
-            {
-                Plugin.Log.LogInfo($"  videoOptions: name={Options.instance.videoOptions.name} enabled={Options.instance.videoOptions.enabled} childCount={Options.instance.videoOptions.transform.childCount}");
-                for (int i = 0; i < Options.instance.videoOptions.transform.childCount; i++)
-                {
-                    var child = Options.instance.videoOptions.transform.GetChild(i);
-                    Plugin.Log.LogInfo($"    video child[{i}]: {child.name} active={child.gameObject.activeSelf}");
-                }
-            }
-            else
-            {
-                Plugin.Log.LogWarning("VR: Options.videoOptions is null!");
-            }
-
-            // WorldSpace for both in-round and main menu
-            VRCanvasHelper.ConvertCanvasToWorldSpace(optCanvas, GameManager.IsIngame() ? 2.5f : 3f);
-
-            // Fix child canvases (tab panels: Game/Input/Video) — set worldCamera
-            // Disable overrideSorting so child canvases don't create separate sorting
-            // groups that cause the laser dot cursor to render behind buttons
-            foreach (var childCanvas in Options.instance.GetComponentsInChildren<Canvas>(true))
-            {
-                if (childCanvas != optCanvas)
-                {
-                    childCanvas.worldCamera = optCanvas.worldCamera;
-                    childCanvas.overrideSorting = false;
-                }
-            }
-            Canvas.ForceUpdateCanvases();
+    [HarmonyPatch(typeof(Options), "Hide")]
+    static class OptionsHidePatch
+    {
+        static void Postfix()
+        {
+            VRControllers.IsOptionsOpen = false;
+            VROptionsUI.HideVRSettingsPanel();
         }
     }
 

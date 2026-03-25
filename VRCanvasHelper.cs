@@ -60,6 +60,42 @@ namespace RavenfieldVRMod
             }
         }
 
+        /// <summary>
+        /// Sets up a canvas for body-tracked WorldSpace rendering.
+        /// The canvas follows the player body position and faces the body forward direction,
+        /// but does NOT rotate with head movement.
+        /// </summary>
+        public static void ConvertCanvasToBodyTracked(Canvas canvas, float distance = 3f)
+        {
+            if (canvas == null) return;
+
+            Camera cam = GetCamera();
+            if (cam == null) return;
+
+            canvas.renderMode = RenderMode.WorldSpace;
+            canvas.worldCamera = cam;
+
+            RectTransform rect = canvas.GetComponent<RectTransform>();
+            if (rect != null)
+                rect.localScale = Vector3.one * 0.002f;
+
+            if (canvas.GetComponent<GraphicRaycaster>() == null)
+                canvas.gameObject.AddComponent<GraphicRaycaster>();
+
+            var tracker = canvas.gameObject.GetComponent<VRBodyTrackedCanvas>();
+            if (tracker == null)
+                tracker = canvas.gameObject.AddComponent<VRBodyTrackedCanvas>();
+            tracker.distance = distance;
+            tracker.enabled = true;
+        }
+
+        public static void StopBodyTracking(Canvas canvas)
+        {
+            if (canvas == null) return;
+            var tracker = canvas.gameObject.GetComponent<VRBodyTrackedCanvas>();
+            if (tracker != null) tracker.enabled = false;
+        }
+
         private static Camera GetCamera()
         {
             if (FpsActorController.instance != null)
@@ -68,6 +104,78 @@ namespace RavenfieldVRMod
                 if (c != null) return c;
             }
             if (Camera.main != null) return Camera.main;
+            foreach (var cam in Camera.allCameras)
+                if (cam.isActiveAndEnabled) return cam;
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// MonoBehaviour that keeps a WorldSpace canvas positioned in front of the player body.
+    /// Follows the player's position and body yaw (not head rotation).
+    /// </summary>
+    public class VRBodyTrackedCanvas : MonoBehaviour
+    {
+        public float distance = 3f;
+
+        private Canvas canvas;
+        private RectTransform rect;
+
+        void OnEnable()
+        {
+            canvas = GetComponent<Canvas>();
+            rect = GetComponent<RectTransform>();
+            UpdatePosition(); // Snap to body immediately
+        }
+
+        void LateUpdate()
+        {
+            if (!VRManager.IsVRActive || canvas == null || !canvas.enabled) return;
+            UpdatePosition();
+        }
+
+        private void UpdatePosition()
+        {
+            Camera cam = FindCamera();
+            if (cam == null) return;
+
+            Vector3 playerPos = cam.transform.position;
+            Vector3 bodyForward;
+
+            if (FpsActorController.instance != null)
+            {
+                float bodyYaw = VRCameraManager.PlayerYaw;
+                bodyForward = Quaternion.Euler(0, bodyYaw, 0) * Vector3.forward;
+            }
+            else
+            {
+                bodyForward = cam.transform.forward;
+                bodyForward.y = 0;
+                if (bodyForward.sqrMagnitude < 0.01f) bodyForward = Vector3.forward;
+                bodyForward.Normalize();
+            }
+
+            Vector3 pos = playerPos + bodyForward * distance;
+            pos.y = playerPos.y;
+
+            if (rect != null)
+            {
+                rect.position = pos;
+                rect.rotation = Quaternion.LookRotation(bodyForward, Vector3.up);
+            }
+
+            canvas.worldCamera = cam;
+        }
+
+        private Camera FindCamera()
+        {
+            if (FpsActorController.instance != null)
+            {
+                Camera c = FpsActorController.instance.GetActiveCamera();
+                if (c != null && c.isActiveAndEnabled) return c;
+            }
+            Camera main = Camera.main;
+            if (main != null && main.isActiveAndEnabled) return main;
             foreach (var cam in Camera.allCameras)
                 if (cam.isActiveAndEnabled) return cam;
             return null;
