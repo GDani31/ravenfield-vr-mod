@@ -54,6 +54,7 @@ namespace RavenfieldVRMod
         {
             vrActive = false;
             convertedCanvasIds.Clear();
+
             foreach (var cam in Camera.allCameras)
             {
                 cam.stereoTargetEye = StereoTargetEyeMask.None;
@@ -115,6 +116,7 @@ namespace RavenfieldVRMod
                     if (!savedOriginalPos && cam.transform.parent != null)
                         playerYaw = cam.transform.parent.eulerAngles.y;
                     savedOriginalPos = true;
+
                     lastTrackedCamera = cam;
                 }
 
@@ -228,6 +230,7 @@ namespace RavenfieldVRMod
                         if (canvas.transform.Find("VR_HUD_Viewport") == null)
                         {
                             canvas.worldCamera = cam;
+                            canvas.planeDistance = 3f;
                             var viewportGO2 = new GameObject("VR_HUD_Viewport");
                             var viewport2 = viewportGO2.AddComponent<RectTransform>();
                             viewport2.SetParent(canvas.transform, false);
@@ -351,7 +354,7 @@ namespace RavenfieldVRMod
                         {
                             killCanvas.renderMode = RenderMode.ScreenSpaceCamera;
                             killCanvas.worldCamera = cam;
-                            killCanvas.planeDistance = 50f;
+                            killCanvas.planeDistance = 3f;
                         }
                         else if (killCanvas != null && killCanvas.renderMode == RenderMode.ScreenSpaceCamera)
                         {
@@ -492,4 +495,5 @@ namespace RavenfieldVRMod
             Plugin.Log.LogInfo("VR view recentered.");
         }
     }
+
 }

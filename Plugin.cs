@@ -11,7 +11,7 @@ namespace RavenfieldVRMod
     {
         public const string PluginGUID = "com.ravenfield.vrmod";
         public const string PluginName = "Ravenfield VR Mod";
-        public const string PluginVersion = "1.0.0";
+        public const string PluginVersion = "1.0.3";
 
         internal static ManualLogSource Log;
         internal static Plugin Instance;
@@ -62,7 +62,7 @@ namespace RavenfieldVRMod
                 }
 
                 // F12 to recenter
-                if (Input.GetKeyDown(KeyCode.F12))
+                if (Input.GetKeyDown(KeyCode.F11))
                 {
                     VRCameraManager.RecenterVR();
                 }

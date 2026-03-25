@@ -164,10 +164,15 @@ namespace RavenfieldVRMod
             VROptionsUI.RefreshToggleState();
             if (!VRManager.IsVRActive || Options.instance == null) return;
 
-            // Don't convert Options to WorldSpace — tab content doesn't render
-            // and the dark canvas panel blocks raycasts to the VR settings panel.
-            // Keep Options as ScreenSpaceOverlay (invisible in VR) and show
-            // the standalone VR settings panel instead.
+            // Hide the game's Options canvas entirely — ScreenSpaceOverlay renders
+            // as a flat duplicate on top of everything in VR. Disable the root canvas
+            // and all child tab canvases so nothing from the original Options shows.
+            Canvas optCanvas = Options.instance.GetComponent<Canvas>();
+            if (optCanvas != null)
+                optCanvas.enabled = false;
+            foreach (var cc in Options.instance.GetComponentsInChildren<Canvas>(true))
+                cc.enabled = false;
+
             VROptionsUI.ShowVRSettingsPanel();
         }
     }
@@ -325,15 +330,39 @@ namespace RavenfieldVRMod
         }
     }
 
-    // Re-apply HMD rotation AFTER FpsActorController positions/rotates the camera.
-    // Without this, turret/vehicle/boat camera systems override head tracking.
+    // Save HMD rotation before FpsActorController.LateUpdate (which overrides it
+    // for turret/vehicle cameras), then restore it after. This approach works
+    // cleanly with stereo rendering — no per-eye interference.
     [HarmonyPatch(typeof(FpsActorController), "LateUpdate")]
     static class FpsActorControllerLateUpdatePatch
     {
-        static void Postfix()
+        private static Quaternion savedLocalRot;
+        private static Vector3 savedLocalPos;
+        private static bool hasSaved;
+
+        static void Prefix(FpsActorController __instance)
         {
             if (!VRManager.IsVRActive) return;
-            VRCameraManager.ReapplyHMDPose();
+            Camera cam = __instance.GetActiveCamera();
+            if (cam != null)
+            {
+                savedLocalRot = cam.transform.localRotation;
+                savedLocalPos = cam.transform.localPosition;
+                hasSaved = true;
+            }
+        }
+
+        static void Postfix(FpsActorController __instance)
+        {
+            if (!VRManager.IsVRActive || !hasSaved) return;
+            hasSaved = false;
+            Camera cam = __instance.GetActiveCamera();
+            if (cam != null)
+            {
+                // Restore the HMD-driven rotation/position that was set in Update
+                cam.transform.localRotation = savedLocalRot;
+                cam.transform.localPosition = savedLocalPos;
+            }
         }
     }
 
@@ -351,6 +380,14 @@ namespace RavenfieldVRMod
             VROptionsUI.CreateStatusOverlay();
         }
     }
+    // Block PlayerFpParent.LateUpdate — it sets camera rotation/position
+    // for weapon bob, lean, recoil etc. which overrides HMD head tracking
+    [HarmonyPatch(typeof(PlayerFpParent), "LateUpdate")]
+    static class PlayerFpParentLateUpdatePatch
+    {
+        static bool Prefix() { return !VRManager.IsVRActive; }
+    }
+
     [HarmonyPatch(typeof(PlayerFpParent), "SetupHorizontalFov")]
     static class PlayerFpParentFovPatch
     {
