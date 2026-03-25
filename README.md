@@ -30,7 +30,7 @@ i made and tested the mod wiht a quest 3.
 | Snap Turn | Right Stick Left/Right |
 | Move | Left Stick |
 | Pause Menu | Left Stick Click |
-| Recenter VR | F12 |
+| Recenter VR | F11 |
 
 ## Requirements
 
