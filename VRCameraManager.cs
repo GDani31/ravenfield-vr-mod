@@ -130,25 +130,7 @@ namespace RavenfieldVRMod
                 // Ensure camera scale is always 1 (fixes "bigger" after vehicle exit)
                 cam.transform.localScale = Vector3.one;
 
-                // Apply FOV zoom via stereo projection matrices
-                // (Camera.fieldOfView is ignored in VR stereo mode)
-                if (cam.stereoEnabled)
-                {
-                    int fov = VRManager.VRFieldOfView;
-                    cam.ResetStereoProjectionMatrices();
-                    if (fov != 90)
-                    {
-                        float zoom = 90f / Mathf.Max(fov, 10f);
-                        for (int e = 0; e < 2; e++)
-                        {
-                            var eye = (Camera.StereoscopicEye)e;
-                            Matrix4x4 proj = cam.GetStereoProjectionMatrix(eye);
-                            proj[0, 0] *= zoom;
-                            proj[1, 1] *= zoom;
-                            cam.SetStereoProjectionMatrix(eye, proj);
-                        }
-                    }
-                }
+                // FOV is fixed by headset optics in VR — cannot be changed via software
 
                 if (FpsActorController.instance != null)
                 {
@@ -163,6 +145,32 @@ namespace RavenfieldVRMod
                     charT.eulerAngles = euler;
                 }
 
+                break;
+            }
+        }
+
+        /// <summary>
+        /// Re-applies HMD pose in LateUpdate, after all game systems
+        /// (turret cameras, vehicle cameras, etc.) have run their updates.
+        /// Without this, turret/vehicle code overwrites the HMD rotation.
+        /// </summary>
+        public static void ReapplyHMDPose()
+        {
+            if (!vrActive || !XRSettings.isDeviceActive || !savedOriginalPos) return;
+            Camera cam = GetActiveCamera();
+            // Only reapply to the camera we tracked in Update — avoids applying
+            // stale position data to a different camera (which caused world to vanish)
+            if (cam == null || cam != lastTrackedCamera) return;
+
+            // Only reapply ROTATION (not position) — position from Update() survives
+            // to rendering fine. It's only rotation that turret/vehicle systems override.
+            hmdDevices.Clear();
+            InputDevices.GetDevicesAtXRNode(XRNode.Head, hmdDevices);
+            foreach (var hmd in hmdDevices)
+            {
+                if (!hmd.isValid) continue;
+                if (hmd.TryGetFeatureValue(CommonUsages.deviceRotation, out Quaternion hmdRot))
+                    cam.transform.localRotation = hmdRot;
                 break;
             }
         }

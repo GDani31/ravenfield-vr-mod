@@ -108,6 +108,14 @@ namespace RavenfieldVRMod
             }
         }
 
+        private void LateUpdate()
+        {
+            // Re-apply HMD rotation AFTER all game systems (turret cameras,
+            // vehicle cameras, etc.) so head tracking always wins
+            if (VRManager.IsVRActive)
+                VRCameraManager.ReapplyHMDPose();
+        }
+
         private void OnDestroy()
         {
             harmony?.UnpatchSelf();

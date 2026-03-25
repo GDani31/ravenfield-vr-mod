@@ -314,38 +314,13 @@ namespace RavenfieldVRMod
                     float pt = VRInput.RightTriggerAnalog - VRInput.LeftTriggerAnalog;
                     if (Mathf.Abs(pt) > 0.1f) __result = pt; break;
 
-                // Turret aiming: head tracking + slow stick fine-tuning
-                // The turret follows the player's gaze direction (camera local rotation
-                // relative to turret parent) with a spring-like tracking force.
+                // Turret aiming: joystick only, slower sensitivity
+                // Head is free to look around independently of turret direction
                 case SteelInput.KeyBinds.AimX:
-                {
-                    Camera aimCam = Camera.main;
-                    if (aimCam == null && FpsActorController.instance != null)
-                        aimCam = FpsActorController.instance.GetActiveCamera();
-                    if (aimCam != null)
-                    {
-                        float localYaw = aimCam.transform.localEulerAngles.y;
-                        if (localYaw > 180f) localYaw -= 360f;
-                        __result = localYaw * 0.03f;
-                    }
-                    if (Mathf.Abs(rx) > 0.1f) __result += -rx * 0.15f;
-                    break;
-                }
+                    if (Mathf.Abs(rx) > 0.1f) __result = -rx * 0.15f; break;
                 case SteelInput.KeyBinds.AimY:
-                {
-                    Camera aimCam = Camera.main;
-                    if (aimCam == null && FpsActorController.instance != null)
-                        aimCam = FpsActorController.instance.GetActiveCamera();
-                    if (aimCam != null)
-                    {
-                        float localPitch = aimCam.transform.localEulerAngles.x;
-                        if (localPitch > 180f) localPitch -= 360f;
-                        __result = -localPitch * 0.03f;
-                    }
                     float ry = lh ? VRInput.LeftStickY : VRInput.RightStickY;
-                    if (Mathf.Abs(ry) > 0.1f) __result += -ry * 0.15f;
-                    break;
-                }
+                    if (Mathf.Abs(ry) > 0.1f) __result = -ry * 0.15f; break;
             }
         }
     }

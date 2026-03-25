@@ -30,7 +30,6 @@ namespace RavenfieldVRMod
         private static GameObject vrSettingsPanel;
         private static Text panelSnapTurnVal;
         private static Text panelAngleVal;
-        private static Text panelFovVal;
         private static Text panelLeftHandVal;
 
         /// <summary>
@@ -383,7 +382,7 @@ namespace RavenfieldVRMod
             vrSettingsPanel.AddComponent<GraphicRaycaster>();
 
             var panelRect = vrSettingsPanel.GetComponent<RectTransform>();
-            panelRect.sizeDelta = new Vector2(400, 360);
+            panelRect.sizeDelta = new Vector2(400, 300);
             panelRect.localScale = Vector3.one * 0.002f;
 
             // Dark background
@@ -422,11 +421,7 @@ namespace RavenfieldVRMod
                 CycleSnapAngle();
                 RefreshPanelValues();
             });
-            panelFovVal = CreatePanelRow(vrSettingsPanel.transform, font, "FOV", -10, () => {
-                CycleFov();
-                RefreshPanelValues();
-            });
-            panelLeftHandVal = CreatePanelRow(vrSettingsPanel.transform, font, "Left Handed", -60, () => {
+            panelLeftHandVal = CreatePanelRow(vrSettingsPanel.transform, font, "Left Handed", -10, () => {
                 VRManager.LeftHanded = !VRManager.LeftHanded;
                 RefreshPanelValues();
             });
@@ -435,7 +430,7 @@ namespace RavenfieldVRMod
             var closeGO = new GameObject("Close");
             closeGO.transform.SetParent(vrSettingsPanel.transform, false);
             var closeRect = closeGO.AddComponent<RectTransform>();
-            closeRect.anchoredPosition = new Vector2(0, -130);
+            closeRect.anchoredPosition = new Vector2(0, -80);
             closeRect.sizeDelta = new Vector2(160, 42);
             var closeImg = closeGO.AddComponent<Image>();
             closeImg.color = new Color(0.3f, 0.12f, 0.12f, 0.95f);
@@ -559,8 +554,6 @@ namespace RavenfieldVRMod
                 panelSnapTurnVal.text = VRManager.TurnMode == 1 ? "ON" : "OFF";
             if (panelAngleVal != null)
                 panelAngleVal.text = $"{VRManager.SnapAngle}\u00B0";
-            if (panelFovVal != null)
-                panelFovVal.text = $"{VRManager.VRFieldOfView}";
             if (panelLeftHandVal != null)
                 panelLeftHandVal.text = VRManager.LeftHanded ? "ON" : "OFF";
         }

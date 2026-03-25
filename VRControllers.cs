@@ -248,8 +248,19 @@ namespace RavenfieldVRMod
                 Quaternion trackingToWorld = cam.transform.rotation * Quaternion.Inverse(headTrackingRot);
 
                 // Position: camera pos + rotated (hand - head) offset
+                // Horizontal axes scaled by VR_WORLD_SCALE to match game world.
+                // Vertical (Y) at 1:1 — no compression, so hands stay at real height.
+                // Small rightward correction for tracking-to-camera alignment.
                 Vector3 offset = handPos - headTrackingPos;
-                hand.transform.position = cam.transform.position + trackingToWorld * offset * VRCameraManager.VR_WORLD_SCALE;
+                // Hands at 85% of real distance from head (not 65% world scale)
+                // so they don't appear too close to the face
+                const float HAND_SCALE = 0.85f;
+                Vector3 scaledOffset = new Vector3(
+                    offset.x * HAND_SCALE,
+                    offset.y,
+                    offset.z * HAND_SCALE
+                );
+                hand.transform.position = cam.transform.position + trackingToWorld * scaledOffset;
 
                 // Rotation: map from tracking space to world space + 60° pitch for natural hold
                 hand.transform.rotation = trackingToWorld * handRot * Quaternion.Euler(60f, 0f, 0f);
@@ -527,10 +538,10 @@ namespace RavenfieldVRMod
                 weaponRot = dominant.transform.rotation;
             }
 
-            Vector3 offset = -(weaponRot * Vector3.right) * (wlh ? -0.13f : 0.13f)
-                           + (weaponRot * Vector3.up) * 0.09f
-                           - (weaponRot * Vector3.forward) * 0.20f;
-            wp.position = dominant.transform.position + offset;
+            Vector3 wpOffset = -(weaponRot * Vector3.right) * (wlh ? -0.13f : 0.13f)
+                             + (weaponRot * Vector3.up) * 0.09f
+                             - (weaponRot * Vector3.forward) * 0.20f;
+            wp.position = dominant.transform.position + wpOffset;
             wp.rotation = weaponRot;
 
             // Move the shoulder/arm model to match
