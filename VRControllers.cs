@@ -538,7 +538,7 @@ namespace RavenfieldVRMod
                 weaponRot = dominant.transform.rotation;
             }
 
-            Vector3 wpOffset = -(weaponRot * Vector3.right) * (wlh ? -0.13f : 0.13f)
+            Vector3 wpOffset = -(weaponRot * Vector3.right) * 0.10f
                              + (weaponRot * Vector3.up) * 0.09f
                              - (weaponRot * Vector3.forward) * 0.20f;
             wp.position = dominant.transform.position + wpOffset;
