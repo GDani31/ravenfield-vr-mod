@@ -97,15 +97,8 @@ namespace RavenfieldVRMod
                 canvas = StrategyUi.instance.GetComponentInChildren<Canvas>();
             if (canvas == null) return;
 
-            Camera cam = Camera.main;
-            if (cam == null && FpsActorController.instance != null)
-                cam = FpsActorController.instance.GetActiveCamera();
-            if (cam == null) return;
-
-            canvas.renderMode = RenderMode.ScreenSpaceCamera;
-            canvas.worldCamera = cam;
-            canvas.planeDistance = 3f;
-            Plugin.Log.LogInfo("VR: Map follows head camera.");
+            VRCanvasHelper.ConvertCanvasToWorldSpace(canvas, 2.5f);
+            Plugin.Log.LogInfo("VR: Map converted to WorldSpace.");
         }
     }
 
@@ -196,10 +189,15 @@ namespace RavenfieldVRMod
             VRCanvasHelper.ConvertCanvasToWorldSpace(optCanvas, GameManager.IsIngame() ? 2.5f : 3f);
 
             // Fix child canvases (tab panels: Game/Input/Video) — set worldCamera
+            // Disable overrideSorting so child canvases don't create separate sorting
+            // groups that cause the laser dot cursor to render behind buttons
             foreach (var childCanvas in Options.instance.GetComponentsInChildren<Canvas>(true))
             {
                 if (childCanvas != optCanvas)
+                {
                     childCanvas.worldCamera = optCanvas.worldCamera;
+                    childCanvas.overrideSorting = false;
+                }
             }
             Canvas.ForceUpdateCanvases();
         }

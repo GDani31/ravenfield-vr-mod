@@ -55,7 +55,7 @@ namespace RavenfieldVRMod
             // Remove the game's OptionToggle component (uses enum we can't extend)
             Object.Destroy(vrToggleObj.GetComponent<OptionToggle>());
 
-            vrToggleObj.transform.SetAsLastSibling();
+            vrToggleObj.transform.SetAsFirstSibling();
 
             // Update label
             Text label = vrToggleObj.GetComponentInChildren<Text>();
@@ -85,7 +85,7 @@ namespace RavenfieldVRMod
             var snapObj = Object.Instantiate(template, parent);
             snapObj.name = "VR Snap Turn";
             Object.Destroy(snapObj.GetComponent<OptionToggle>());
-            snapObj.transform.SetAsLastSibling();
+            snapObj.transform.SetSiblingIndex(1);
             var snapLabel = snapObj.GetComponentInChildren<Text>();
             if (snapLabel != null) snapLabel.text = "Snap Turn";
             snapTurnToggle = snapObj.GetComponentInChildren<Toggle>();
@@ -102,7 +102,7 @@ namespace RavenfieldVRMod
             var angleObj = Object.Instantiate(template, parent);
             angleObj.name = "VR Snap Angle";
             Object.Destroy(angleObj.GetComponent<OptionToggle>());
-            angleObj.transform.SetAsLastSibling();
+            angleObj.transform.SetSiblingIndex(2);
             snapAngleText = angleObj.GetComponentInChildren<Text>();
             UpdateSnapAngleText();
             var angleTrigger = angleObj.GetComponentInChildren<Toggle>();
@@ -116,7 +116,7 @@ namespace RavenfieldVRMod
             var fovObj = Object.Instantiate(template, parent);
             fovObj.name = "VR FOV";
             Object.Destroy(fovObj.GetComponent<OptionToggle>());
-            fovObj.transform.SetAsLastSibling();
+            fovObj.transform.SetSiblingIndex(3);
             fovText = fovObj.GetComponentInChildren<Text>();
             UpdateFovText();
             var fovTrigger = fovObj.GetComponentInChildren<Toggle>();
@@ -130,7 +130,7 @@ namespace RavenfieldVRMod
             var lhObj = Object.Instantiate(template, parent);
             lhObj.name = "VR Left Handed";
             Object.Destroy(lhObj.GetComponent<OptionToggle>());
-            lhObj.transform.SetAsLastSibling();
+            lhObj.transform.SetSiblingIndex(4);
             var lhLabel = lhObj.GetComponentInChildren<Text>();
             if (lhLabel != null) lhLabel.text = "Left Handed";
             leftHandedToggle = lhObj.GetComponentInChildren<Toggle>();

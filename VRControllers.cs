@@ -664,6 +664,7 @@ namespace RavenfieldVRMod
                     var mat = new Material(shader) { color = Color.white };
                     mat.renderQueue = 5000; // Render on top of UI
                     renderer.material = mat;
+                    renderer.sortingOrder = 32767; // Above all canvas sorting orders
                 }
             }
             dot.SetActive(false);
