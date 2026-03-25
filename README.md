@@ -32,6 +32,8 @@ i made and tested the mod wiht a quest 3.
 | Pause Menu | Left Stick Click |
 | Recenter VR | F11 |
 
+On Left Hand Mode all control bindings are mirrored between left and right hands.
+
 ## Requirements
 
 - [BepInEx 5.4.x](https://github.com/BepInEx/BepInEx/releases) for Unity Mono (x64)
