@@ -212,8 +212,25 @@ namespace RavenfieldVRMod
             switch (input)
             {
                 case SteelInput.KeyBinds.Fire: if (lh ? VRInput.LeftTrigger : VRInput.RightTrigger) __result = true; break;
-                case SteelInput.KeyBinds.Reload: if (lh ? VRInput.LeftB : VRInput.RightB) __result = true; break;
-                case SteelInput.KeyBinds.Jump: if (lh ? VRInput.RightTrigger : VRInput.LeftTrigger) __result = true; break;
+                case SteelInput.KeyBinds.Reload:
+                    if (VRReload.Enabled)
+                    {
+                        // Gesture reload: trigger from gesture completion OR fallback for melee/thrown
+                        if (VRReload.TriggerReload || VRReload.FallbackButtonReload) __result = true;
+                    }
+                    else
+                    {
+                        // Classic button reload
+                        if (lh ? VRInput.LeftB : VRInput.RightB) __result = true;
+                    }
+                    break;
+                case SteelInput.KeyBinds.Jump:
+                    // Suppress jump while VR reload active (off-hand trigger used for grab)
+                    if (!VRReload.SuppressOffhandTrigger)
+                    {
+                        if (lh ? VRInput.RightTrigger : VRInput.LeftTrigger) __result = true;
+                    }
+                    break;
                 case SteelInput.KeyBinds.Sprint: if (lh ? VRInput.LeftGrip : VRInput.RightGrip) __result = true; break;
                 case SteelInput.KeyBinds.Use: if (lh ? VRInput.LeftA : VRInput.RightA) __result = true; break;
                 case SteelInput.KeyBinds.SquadLeaderKit: if (lh ? VRInput.LeftStickClick : VRInput.RightStickClick) __result = true; break;
@@ -238,8 +255,22 @@ namespace RavenfieldVRMod
             switch (input)
             {
                 case SteelInput.KeyBinds.Fire: if (lh ? VRInput.LeftTriggerDown : VRInput.RightTriggerDown) __result = true; break;
-                case SteelInput.KeyBinds.Reload: if (lh ? VRInput.LeftBDown : VRInput.RightBDown) __result = true; break;
-                case SteelInput.KeyBinds.Jump: if (lh ? VRInput.RightTriggerDown : VRInput.LeftTriggerDown) __result = true; break;
+                case SteelInput.KeyBinds.Reload:
+                    if (VRReload.Enabled)
+                    {
+                        if (VRReload.TriggerReload || VRReload.FallbackButtonReload) __result = true;
+                    }
+                    else
+                    {
+                        if (lh ? VRInput.LeftBDown : VRInput.RightBDown) __result = true;
+                    }
+                    break;
+                case SteelInput.KeyBinds.Jump:
+                    if (!VRReload.SuppressOffhandTrigger)
+                    {
+                        if (lh ? VRInput.RightTriggerDown : VRInput.LeftTriggerDown) __result = true;
+                    }
+                    break;
                 case SteelInput.KeyBinds.Use: if (lh ? VRInput.LeftADown : VRInput.RightADown) __result = true; break;
                 case SteelInput.KeyBinds.SquadLeaderKit: if (lh ? VRInput.LeftStickClickDown : VRInput.RightStickClickDown) __result = true; break;
                 case SteelInput.KeyBinds.OpenLoadout: if (lh ? VRInput.RightADown : VRInput.LeftADown) __result = true; break;

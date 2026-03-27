@@ -57,6 +57,7 @@ namespace RavenfieldVRMod
                 {
                     Logger.LogInfo("Creating VR controllers...");
                     VRControllers.Create();
+                    VRReload.Create();
                     controllersCreated = true;
                     Logger.LogInfo("VR controllers create call done.");
                 }
@@ -73,6 +74,7 @@ namespace RavenfieldVRMod
             else if (controllersCreated)
             {
                 VRControllers.DestroyInstance();
+                VRReload.DestroyInstance();
                 controllersCreated = false;
             }
         }
@@ -120,6 +122,7 @@ namespace RavenfieldVRMod
         {
             harmony?.UnpatchSelf();
             VRManager.Shutdown();
+            VRReload.DestroyInstance();
             VRControllers.DestroyInstance();
         }
     }

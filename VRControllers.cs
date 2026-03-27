@@ -48,7 +48,12 @@ namespace RavenfieldVRMod
         // Expose thumbstick for Plugin.cs snap turn
         public Vector2 RightThumbstick => new Vector2(VRInput.RightStickX, VRInput.RightStickY);
 
-        // Weapon
+        // Expose device indices for VRReload haptics
+        public uint LeftDeviceIndex => leftIndex;
+        public uint RightDeviceIndex => rightIndex;
+
+        public GameObject LeftHand => leftHand;
+        public GameObject RightHand => rightHand;
 
         public static void Create()
         {
@@ -173,6 +178,17 @@ namespace RavenfieldVRMod
             else
             {
                 UpdateLaserDot(null, false, Vector3.zero);
+            }
+
+            // VR gesture reload update
+            if (VRReload.Instance != null && VRReload.Enabled)
+            {
+                bool leftH = VRManager.LeftHanded;
+                GameObject dominant = leftH ? leftHand : rightHand;
+                GameObject offhand2 = leftH ? rightHand : leftHand;
+                uint offIdx = leftH ? rightIndex : leftIndex;
+                uint domIdx = leftH ? leftIndex : rightIndex;
+                VRReload.Instance.UpdateReload(dominant, offhand2, offIdx, domIdx);
             }
 
             // Weapon positioning is done in LateUpdate (after game's own updates are patched out)

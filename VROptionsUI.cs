@@ -31,6 +31,7 @@ namespace RavenfieldVRMod
         private static Text panelSnapTurnVal;
         private static Text panelAngleVal;
         private static Text panelLeftHandVal;
+        private static Text panelGestureReloadVal;
 
         /// <summary>
         /// Injects the VR toggle into the Options video tab.
@@ -382,7 +383,7 @@ namespace RavenfieldVRMod
             vrSettingsPanel.AddComponent<GraphicRaycaster>();
 
             var panelRect = vrSettingsPanel.GetComponent<RectTransform>();
-            panelRect.sizeDelta = new Vector2(400, 300);
+            panelRect.sizeDelta = new Vector2(400, 360);
             panelRect.localScale = Vector3.one * 0.002f;
 
             // Dark background
@@ -425,12 +426,16 @@ namespace RavenfieldVRMod
                 VRManager.LeftHanded = !VRManager.LeftHanded;
                 RefreshPanelValues();
             });
+            panelGestureReloadVal = CreatePanelRow(vrSettingsPanel.transform, font, "Gesture Reload", -60, () => {
+                VRReload.Enabled = !VRReload.Enabled;
+                RefreshPanelValues();
+            });
 
             // Close button
             var closeGO = new GameObject("Close");
             closeGO.transform.SetParent(vrSettingsPanel.transform, false);
             var closeRect = closeGO.AddComponent<RectTransform>();
-            closeRect.anchoredPosition = new Vector2(0, -80);
+            closeRect.anchoredPosition = new Vector2(0, -130);
             closeRect.sizeDelta = new Vector2(160, 42);
             var closeImg = closeGO.AddComponent<Image>();
             closeImg.color = new Color(0.3f, 0.12f, 0.12f, 0.95f);
@@ -556,6 +561,8 @@ namespace RavenfieldVRMod
                 panelAngleVal.text = $"{VRManager.SnapAngle}\u00B0";
             if (panelLeftHandVal != null)
                 panelLeftHandVal.text = VRManager.LeftHanded ? "ON" : "OFF";
+            if (panelGestureReloadVal != null)
+                panelGestureReloadVal.text = VRReload.Enabled ? "ON" : "OFF";
         }
     }
 }
