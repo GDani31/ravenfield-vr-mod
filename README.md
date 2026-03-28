@@ -30,9 +30,14 @@ i made and tested the mod wiht a quest 3.
 | Snap Turn | Right Stick Left/Right |
 | Move | Left Stick |
 | Pause Menu | Left Stick Click |
-| Recenter VR | F11 |
+| Recenter VR | F11 / Joystick Click (both sticks) |
+| Pick up magazine / shell / rocket (manual reload) | Offhand Trigger |
 
 On Left Hand Mode all control bindings are mirrored between left and right hands.
+
+### Manual Reloading
+
+There is a setting to enable manual reloading. When enabled, you physically pick up magazines, shells, and rockets with the offhand trigger to reload your weapon. Some workshop weapons may have problems with manual reloading and will default back to automatic reloading.
 
 ## Requirements
 
