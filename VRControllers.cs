@@ -174,6 +174,7 @@ namespace RavenfieldVRMod
             {
                 bool hitUI = UpdateUIPointer(pointerHand.transform, pointerTrigger);
                 UpdateLaserDot(pointerHand.transform, hitUI, laserDot != null ? laserDot.transform.position : Vector3.zero);
+                UpdateMenuScrolling();
             }
             else
             {
@@ -327,8 +328,8 @@ namespace RavenfieldVRMod
 
             foreach (var canvas in Object.FindObjectsOfType<Canvas>())
             {
-                if (canvas.renderMode == RenderMode.ScreenSpaceOverlay)
-                    continue;
+                if (canvas.renderMode != RenderMode.WorldSpace)
+                    continue; // Only interact with WorldSpace canvases (skip Overlay + ScreenSpaceCamera HUD)
                 if (!canvas.isRootCanvas)
                     continue;
 
@@ -500,6 +501,48 @@ namespace RavenfieldVRMod
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Drives UI ScrollRects with the off-hand joystick when menus are visible.
+        /// Y axis = vertical scroll (weapon list), X axis = horizontal scroll (class tabs).
+        /// Also sends scroll events to the currently hovered UI element.
+        /// </summary>
+        private void UpdateMenuScrolling()
+        {
+            bool lh = VRManager.LeftHanded;
+            float sx = lh ? VRInput.RightStickX : VRInput.LeftStickX;
+            float sy = lh ? VRInput.RightStickY : VRInput.LeftStickY;
+
+            if (Mathf.Abs(sx) < 0.15f && Mathf.Abs(sy) < 0.15f) return;
+
+            float scrollSpeed = 1.5f * Time.deltaTime;
+
+            // Drive all active ScrollRects directly
+            foreach (var sr in Object.FindObjectsOfType<ScrollRect>())
+            {
+                if (sr == null || !sr.isActiveAndEnabled) continue;
+                // Only scroll WorldSpace ScrollRects (not HUD)
+                Canvas parentCanvas = sr.GetComponentInParent<Canvas>();
+                if (parentCanvas == null || parentCanvas.renderMode != RenderMode.WorldSpace)
+                    continue;
+
+                if (sr.vertical && Mathf.Abs(sy) > 0.15f)
+                    sr.verticalNormalizedPosition = Mathf.Clamp01(
+                        sr.verticalNormalizedPosition + sy * scrollSpeed);
+
+                if (sr.horizontal && Mathf.Abs(sx) > 0.15f)
+                    sr.horizontalNormalizedPosition = Mathf.Clamp01(
+                        sr.horizontalNormalizedPosition + sx * scrollSpeed);
+            }
+
+            // Also send scroll events to hovered element (for non-ScrollRect scrollable content)
+            if (lastHoveredObject != null && EventSystem.current != null)
+            {
+                var scrollData = new PointerEventData(EventSystem.current);
+                scrollData.scrollDelta = new Vector2(sx * 3f, sy * 3f);
+                ExecuteEvents.ExecuteHierarchy(lastHoveredObject, scrollData, ExecuteEvents.scrollHandler);
+            }
         }
 
         private void ClearHover()

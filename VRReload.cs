@@ -174,8 +174,13 @@ namespace RavenfieldVRMod
 
             if (isShellFed)
             {
-                // SHOTGUN: off-hand trigger → grab shell → go straight to Holding
-                if (!offTriggerDown) return; // only respond to trigger, not B
+                // SHOTGUN/GRENADE LAUNCHER: off-hand trigger → grab shell → Holding
+                // B button → fall back to game's native reload (works for all fire modes)
+                if (!offTriggerDown)
+                {
+                    if (bDown) FallbackButtonReload = true;
+                    return;
+                }
                 Plugin.Log.LogInfo($"VR Reload: Shell weapon '{weaponMagTransform.name}', grabbing shell");
                 SpawnHeldClone(offHand.transform);
                 State = ReloadState.Holding;
@@ -471,12 +476,20 @@ namespace RavenfieldVRMod
 
         private int ScoreMagName(string nameLower)
         {
-            // Penalize animation/hand/arm meshes
+            // Exclude non-magazine meshes entirely
             if (nameLower.Contains("reload") || nameLower.Contains("hand") ||
                 nameLower.Contains("arm") || nameLower.Contains("muzzle") ||
-                nameLower.Contains("particle") || nameLower.Contains("audio") ||
-                nameLower.Contains("camera") || nameLower.Contains("lens"))
-                return 9000;
+                nameLower.Contains("particle") || nameLower.Contains("casing") ||
+                nameLower.Contains("audio") || nameLower.Contains("camera") ||
+                nameLower.Contains("lens") || nameLower.Contains("flash") ||
+                nameLower.Contains("bolt") || nameLower.Contains("sight") ||
+                nameLower.Contains("scope") || nameLower.Contains("rail") ||
+                nameLower.Contains("barrel") || nameLower.Contains("stock") ||
+                nameLower.Contains("grip") || nameLower.Contains("guard") ||
+                nameLower.Contains("trigger") || nameLower.Contains("safety") ||
+                nameLower.Contains("body") || nameLower.Contains("receiver") ||
+                nameLower.Contains("reciver"))
+                return int.MaxValue;
 
             if (nameLower == "mag" || nameLower == "magazine" || nameLower == "clip") return 1;
             if (nameLower.StartsWith("mag") && !nameLower.Contains("reload")) return 5 + nameLower.Length;

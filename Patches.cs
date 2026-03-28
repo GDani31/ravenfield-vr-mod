@@ -121,7 +121,10 @@ namespace RavenfieldVRMod
         }
     }
 
-    // Loadout/weapon selection → body-tracked WorldSpace
+    // Loadout/weapon selection → body-tracked WorldSpace.
+    // Canvas converts ONCE and stays WorldSpace permanently.
+    // The game uses uiCanvas.enabled for visibility — no renderMode cycling.
+    // renderMode cycling caused unfixable progressive anchoredPosition drift.
     [HarmonyPatch(typeof(LoadoutUi), "Show")]
     static class LoadoutUiShowPatch
     {
@@ -133,8 +136,77 @@ namespace RavenfieldVRMod
                 canvas = LoadoutUi.instance.GetComponentInChildren<Canvas>();
             if (canvas == null) return;
 
-            VRCanvasHelper.ConvertCanvasToBodyTracked(canvas, 3f);
-            Plugin.Log.LogInfo("VR: Loadout body-tracked.");
+            if (canvas.renderMode != RenderMode.WorldSpace)
+            {
+                // First-ever open: one-time conversion.
+                // Save ALL child localPositions BEFORE conversion — Unity
+                // recalculates positions to preserve world coordinates during
+                // renderMode change. Using localPosition (not anchoredPosition)
+                // because anchors/pivot may also change during conversion.
+                var rects = canvas.GetComponentsInChildren<RectTransform>(true);
+                var savedPos = new Vector3[rects.Length];
+                var savedScale = new Vector3[rects.Length];
+                for (int i = 0; i < rects.Length; i++)
+                {
+                    savedPos[i] = rects[i].localPosition;
+                    savedScale[i] = rects[i].localScale;
+                }
+
+                // Move canvas to origin before conversion so Unity's world-position
+                // preservation is consistent regardless of where the player is standing
+                canvas.transform.position = Vector3.zero;
+                canvas.transform.rotation = Quaternion.identity;
+
+                VRCanvasHelper.ConvertCanvasToBodyTracked(canvas, 3f);
+
+                // Disable CanvasScaler — in WorldSpace mode it continuously
+                // recalculates layout and overrides our position restores.
+                var scaler = canvas.GetComponent<UnityEngine.UI.CanvasScaler>();
+                if (scaler != null) scaler.enabled = false;
+
+                // Restore all child local positions (skip index 0 = canvas itself,
+                // which is now managed by body tracking)
+                for (int i = 1; i < rects.Length; i++)
+                {
+                    if (rects[i] != null)
+                    {
+                        rects[i].localPosition = savedPos[i];
+                        rects[i].localScale = savedScale[i];
+                    }
+                }
+
+                // Also restore after a delay to catch any deferred recalculation
+                Plugin.Instance.StartCoroutine(DelayedPositionRestore(rects, savedPos, savedScale));
+
+                Plugin.Log.LogInfo($"VR: Loadout → WorldSpace, restored {rects.Length} positions.");
+            }
+            else
+            {
+                // Re-open: just refresh camera + body tracking
+                Camera cam = Camera.main;
+                if (cam == null && FpsActorController.instance != null)
+                    cam = FpsActorController.instance.GetActiveCamera();
+                if (cam == null)
+                    foreach (var c in Camera.allCameras)
+                        if (c.isActiveAndEnabled) { cam = c; break; }
+                if (cam != null) canvas.worldCamera = cam;
+                var gr = canvas.GetComponent<UnityEngine.UI.GraphicRaycaster>();
+                if (gr != null) gr.enabled = true;
+                var tracker = canvas.GetComponent<VRBodyTrackedCanvas>();
+                if (tracker != null) { tracker.distance = 3f; tracker.enabled = true; }
+                Plugin.Log.LogInfo("VR: Loadout re-opened.");
+            }
+        }
+
+        private static System.Collections.IEnumerator DelayedPositionRestore(
+            RectTransform[] rects, Vector3[] savedPos, Vector3[] savedScale)
+        {
+            yield return null;
+            for (int i = 1; i < rects.Length; i++)
+                if (rects[i] != null) { rects[i].localPosition = savedPos[i]; rects[i].localScale = savedScale[i]; }
+            yield return null;
+            for (int i = 1; i < rects.Length; i++)
+                if (rects[i] != null) { rects[i].localPosition = savedPos[i]; rects[i].localScale = savedScale[i]; }
         }
     }
 
@@ -150,7 +222,9 @@ namespace RavenfieldVRMod
             if (canvas != null)
             {
                 VRCanvasHelper.StopBodyTracking(canvas);
-                canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                // Keep WorldSpace — game's HideCanvas sets canvas.enabled=false
+                var gr = canvas.GetComponent<UnityEngine.UI.GraphicRaycaster>();
+                if (gr != null) gr.enabled = false;
             }
         }
     }
@@ -307,6 +381,8 @@ namespace RavenfieldVRMod
             {
                 case SteelInput.KeyBinds.Horizontal:
                 case SteelInput.KeyBinds.Vertical:
+                    // Block movement when loadout is open (stick used for UI scrolling)
+                    if (LoadoutUi.IsOpen()) { __result = 0f; break; }
                     if (Mathf.Abs(lx) > 0.1f || Mathf.Abs(ly) > 0.1f)
                     {
                         float headYaw = 0f;
@@ -428,6 +504,19 @@ namespace RavenfieldVRMod
     static class PlayerFpParentAimFovPatch
     {
         static bool Prefix() { return !VRManager.IsVRActive; }
+    }
+    // Block sprint "tuck" animation — Weapon.Update sets animator "tuck" = true
+    // when sprinting, which lowers the weapon. In VR the weapon is held by
+    // controllers so the animation fights the hand position.
+    [HarmonyPatch(typeof(Weapon), "Update")]
+    static class WeaponTuckPatch
+    {
+        static void Postfix(Weapon __instance)
+        {
+            if (!VRManager.IsVRActive) return;
+            if (__instance.animator != null && __instance.UserIsPlayer())
+                __instance.animator.SetBool(Weapon.TUCK_PARAMETER_HASH, false);
+        }
     }
     [HarmonyPatch(typeof(GameManager), "Update")]
     static class GameManagerUpdatePatch

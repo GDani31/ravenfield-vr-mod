@@ -26,6 +26,8 @@ namespace RavenfieldVRMod
             Camera cam = GetCamera();
             if (cam == null) return;
 
+            UndoHUDViewport(canvas);
+
             canvas.renderMode = RenderMode.WorldSpace;
             canvas.worldCamera = cam;
 
@@ -72,6 +74,11 @@ namespace RavenfieldVRMod
             Camera cam = GetCamera();
             if (cam == null) return;
 
+            // Undo any VR_HUD_Viewport damage from ConvertCanvasesForVR.
+            // That system wraps children into a viewport for HUD centering,
+            // which breaks menu content when the canvas is later used as WorldSpace.
+            UndoHUDViewport(canvas);
+
             canvas.renderMode = RenderMode.WorldSpace;
             canvas.worldCamera = cam;
 
@@ -87,6 +94,30 @@ namespace RavenfieldVRMod
                 tracker = canvas.gameObject.AddComponent<VRBodyTrackedCanvas>();
             tracker.distance = distance;
             tracker.enabled = true;
+        }
+
+        /// <summary>
+        /// If ConvertCanvasesForVR wrapped this canvas's children into a
+        /// VR_HUD_Viewport, undo it by reparenting children back and
+        /// destroying the viewport.
+        /// </summary>
+        public static void UndoHUDViewport(Canvas canvas)
+        {
+            if (canvas == null) return;
+            Transform viewport = canvas.transform.Find("VR_HUD_Viewport");
+            if (viewport == null) return;
+
+            Plugin.Log.LogInfo($"VR: Undoing HUD viewport on '{canvas.name}'");
+
+            // Reparent all viewport children back to the canvas
+            var children = new System.Collections.Generic.List<Transform>();
+            for (int i = viewport.childCount - 1; i >= 0; i--)
+                children.Add(viewport.GetChild(i));
+            foreach (var child in children)
+                child.SetParent(canvas.transform, false);
+
+            // Destroy the viewport
+            Object.Destroy(viewport.gameObject);
         }
 
         public static void StopBodyTracking(Canvas canvas)

@@ -29,7 +29,19 @@ namespace RavenfieldVRMod
 
         // Canvas tracking
         private static HashSet<int> convertedCanvasIds = new HashSet<int>();
+        // Protected canvases are NEVER processed by ConvertCanvasesForVR (survives scene transitions)
+        private static HashSet<int> protectedCanvasIds = new HashSet<int>();
         private static bool lastWasIngame;
+
+        /// <summary>
+        /// Mark a canvas as protected — ConvertCanvasesForVR will never touch it.
+        /// Used by menu patches to prevent the HUD converter from damaging menu content.
+        /// </summary>
+        public static void ProtectCanvas(Canvas canvas)
+        {
+            if (canvas != null)
+                protectedCanvasIds.Add(canvas.GetInstanceID());
+        }
 
         // VR world scale — shrinks the player to match game character height
         public const float VR_WORLD_SCALE = 0.65f;
@@ -218,6 +230,8 @@ namespace RavenfieldVRMod
 
                 if (convertedCanvasIds.Contains(id))
                     continue;
+                if (protectedCanvasIds.Contains(id))
+                    continue;
                 if (!canvas.isRootCanvas)
                     continue;
                 if (canvas.renderMode != RenderMode.ScreenSpaceOverlay)
@@ -266,7 +280,7 @@ namespace RavenfieldVRMod
 
                     if (menuOpen)
                     {
-                        // Menu canvases → WorldSpace (static, interactable with laser)
+                        // Menu canvases → WorldSpace (interactable with laser)
                         canvas.renderMode = RenderMode.WorldSpace;
                         canvas.worldCamera = cam;
 
@@ -279,7 +293,7 @@ namespace RavenfieldVRMod
                             forward.y = 0;
                             if (forward.sqrMagnitude < 0.01f) forward = Vector3.forward;
                             forward.Normalize();
-                            Vector3 pos = cam.transform.position + forward * 4.5f;
+                            Vector3 pos = cam.transform.position + forward * 2.5f;
                             pos.y = cam.transform.position.y;
                             rect.position = pos;
                             rect.rotation = Quaternion.LookRotation(forward, Vector3.up);
@@ -287,34 +301,59 @@ namespace RavenfieldVRMod
 
                         if (canvas.GetComponent<GraphicRaycaster>() == null)
                             canvas.gameObject.AddComponent<GraphicRaycaster>();
+
+                        // Add body tracking so sub-panels reposition when re-opened
+                        var bodyTracker = canvas.gameObject.GetComponent<VRBodyTrackedCanvas>();
+                        if (bodyTracker == null)
+                            bodyTracker = canvas.gameObject.AddComponent<VRBodyTrackedCanvas>();
+                        bodyTracker.distance = 3f;
+                        bodyTracker.enabled = true;
                     }
                     else
                     {
+                        // Skip menu canvases — they're handled by their own Show patches
+                        // and must NOT get the HUD viewport treatment (which reparents
+                        // their children and breaks them when reopened)
+                        string cname = canvas.name;
+                        if (cname.Contains("Loadout") || cname.Contains("Strategy") ||
+                            cname.Contains("Menu UI") || cname.Contains("Options") ||
+                            cname.Contains("Scoreboard") || cname.Contains("Victory"))
+                        {
+                            convertedCanvasIds.Add(id);
+                            continue;
+                        }
+
                         // HUD → ScreenSpaceCamera with centered viewport for VR
+                        // planeDistance=0.5 keeps HUD close to camera so it doesn't
+                        // clip through the floor when looking down
                         canvas.renderMode = RenderMode.ScreenSpaceCamera;
                         canvas.worldCamera = cam;
-                        canvas.planeDistance = 3f;
+                        canvas.planeDistance = 0.5f;
 
-                        // Create a centered viewport to pull edge-anchored elements inward
-                        // (health, ammo, flags are anchored to screen edges — invisible in VR)
-                        var viewportGO = new GameObject("VR_HUD_Viewport");
-                        var viewport = viewportGO.AddComponent<RectTransform>();
-                        viewport.SetParent(canvas.transform, false);
-                        viewport.anchorMin = new Vector2(0.25f, 0.25f);
-                        viewport.anchorMax = new Vector2(0.75f, 0.75f);
-                        viewport.offsetMin = Vector2.zero;
-                        viewport.offsetMax = Vector2.zero;
-
-                        // Reparent all existing children into the viewport
-                        var children = new List<Transform>();
-                        for (int i = canvas.transform.childCount - 1; i >= 0; i--)
+                        // Only create the viewport wrapper once
+                        if (canvas.transform.Find("VR_HUD_Viewport") == null)
                         {
-                            var child = canvas.transform.GetChild(i);
-                            if (child.gameObject != viewportGO)
-                                children.Add(child);
+                            // Create a centered viewport to pull edge-anchored elements inward
+                            // (health, ammo, flags are anchored to screen edges — invisible in VR)
+                            var viewportGO = new GameObject("VR_HUD_Viewport");
+                            var viewport = viewportGO.AddComponent<RectTransform>();
+                            viewport.SetParent(canvas.transform, false);
+                            viewport.anchorMin = new Vector2(0.25f, 0.25f);
+                            viewport.anchorMax = new Vector2(0.75f, 0.75f);
+                            viewport.offsetMin = Vector2.zero;
+                            viewport.offsetMax = Vector2.zero;
+
+                            // Reparent all existing children into the viewport
+                            var children = new List<Transform>();
+                            for (int i = canvas.transform.childCount - 1; i >= 0; i--)
+                            {
+                                var child = canvas.transform.GetChild(i);
+                                if (child.gameObject != viewportGO)
+                                    children.Add(child);
+                            }
+                            foreach (var child in children)
+                                child.SetParent(viewport, false);
                         }
-                        foreach (var child in children)
-                            child.SetParent(viewport, false);
                     }
                 }
                 else

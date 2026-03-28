@@ -62,11 +62,22 @@ namespace RavenfieldVRMod
                     Logger.LogInfo("VR controllers create call done.");
                 }
 
-                // F12 to recenter
+                // F11 to recenter
                 if (Input.GetKeyDown(KeyCode.F11))
                 {
                     VRCameraManager.RecenterVR();
                 }
+
+                // Both joysticks pressed simultaneously = recenter
+                if (VRInput.LeftStickClickDown && VRInput.RightStickClick ||
+                    VRInput.RightStickClickDown && VRInput.LeftStickClick)
+                {
+                    VRCameraManager.RecenterVR();
+                    Logger.LogInfo("VR: Recentered (both sticks)");
+                }
+
+                // Dominant A button = also SwitchFireMode (alongside Use)
+                HandleFireModeSwitch();
 
                 // Right thumbstick for snap turning (45 degree increments)
                 HandleSnapTurn();
@@ -108,6 +119,58 @@ namespace RavenfieldVRMod
                 if (Mathf.Abs(turnAxis) < 0.3f)
                     snapTurnReady = true;
             }
+        }
+
+        private static System.Reflection.MethodInfo switchFireModeMethod;
+        private static bool fireModeReflectionDone;
+
+        private void HandleFireModeSwitch()
+        {
+            // Dominant A button (same as Use) — also calls SwitchFireMode on weapon
+            bool aDown = VRManager.LeftHanded ? VRInput.LeftADown : VRInput.RightADown;
+            if (!aDown || FpsActorController.instance == null) return;
+
+            // Don't switch fire mode when in menus or vehicles
+            if (LoadoutUi.IsOpen() || IngameMenuUi.IsOpen()) return;
+
+            try
+            {
+                if (!fireModeReflectionDone)
+                {
+                    fireModeReflectionDone = true;
+                    var actorField = typeof(FpsActorController).GetField("actor",
+                        System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public |
+                        System.Reflection.BindingFlags.NonPublic);
+                    if (actorField != null)
+                    {
+                        var weaponField = actorField.FieldType.GetField("activeWeapon",
+                            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public |
+                            System.Reflection.BindingFlags.NonPublic);
+                        if (weaponField != null)
+                            switchFireModeMethod = weaponField.FieldType.GetMethod("SwitchFireMode",
+                                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public |
+                                System.Reflection.BindingFlags.NonPublic);
+                    }
+                }
+
+                if (switchFireModeMethod != null)
+                {
+                    var actorField = typeof(FpsActorController).GetField("actor",
+                        System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public |
+                        System.Reflection.BindingFlags.NonPublic);
+                    object actor = actorField?.GetValue(FpsActorController.instance);
+                    if (actor != null)
+                    {
+                        var weaponField = actor.GetType().GetField("activeWeapon",
+                            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public |
+                            System.Reflection.BindingFlags.NonPublic);
+                        object weapon = weaponField?.GetValue(actor);
+                        if (weapon != null)
+                            switchFireModeMethod.Invoke(weapon, null);
+                    }
+                }
+            }
+            catch { }
         }
 
         private void LateUpdate()
