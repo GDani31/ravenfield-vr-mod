@@ -59,12 +59,15 @@ namespace RavenfieldVRMod
             convertedCanvasIds.Clear();
             didStartupRotation = false;
             startupFrame = 0;
+            Application.onBeforeRender -= OnBeforeRender;
+            Application.onBeforeRender += OnBeforeRender;
             Plugin.Log.LogInfo("VR camera manager activated.");
         }
 
         public static void OnVRDisabled()
         {
             vrActive = false;
+            Application.onBeforeRender -= OnBeforeRender;
             convertedCanvasIds.Clear();
 
             foreach (var cam in Camera.allCameras)
@@ -192,6 +195,33 @@ namespace RavenfieldVRMod
         public static void RotatePlayer(float yawDelta)
         {
             playerYaw += yawDelta;
+        }
+
+        /// <summary>
+        /// Application.onBeforeRender — fires once per frame after ALL LateUpdates,
+        /// before any camera begins rendering. Forces HMD head tracking as the
+        /// absolute last transform before rendering, so no game script (vehicle,
+        /// turret, death cam) can override it. Both eyes see the same rotation
+        /// (unlike Camera.onPreCull which fires per-eye in multi-pass stereo).
+        /// </summary>
+        private static void OnBeforeRender()
+        {
+            if (!vrActive) return;
+            Camera cam = GetActiveCamera();
+            if (cam == null) return;
+
+            // Only force ROTATION here — position is handled by ApplyHMDTracking
+            // in Update, where the game can still adjust it in LateUpdate
+            // (deployment repositioning, vehicle seats, etc.)
+            hmdDevices.Clear();
+            InputDevices.GetDevicesAtXRNode(XRNode.Head, hmdDevices);
+            foreach (var hmd in hmdDevices)
+            {
+                if (!hmd.isValid) continue;
+                if (hmd.TryGetFeatureValue(CommonUsages.deviceRotation, out Quaternion hmdRot))
+                    cam.transform.localRotation = hmdRot;
+                break;
+            }
         }
 
         /// <summary>

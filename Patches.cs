@@ -438,8 +438,8 @@ namespace RavenfieldVRMod
     }
 
     // Save HMD rotation before FpsActorController.LateUpdate (which overrides it
-    // for turret/vehicle cameras), then restore it after. This approach works
-    // cleanly with stereo rendering — no per-eye interference.
+    // for turret/vehicle cameras), then restore it after. Application.onBeforeRender
+    // provides the final guarantee — it re-applies HMD pose after ALL LateUpdates.
     [HarmonyPatch(typeof(FpsActorController), "LateUpdate")]
     static class FpsActorControllerLateUpdatePatch
     {
@@ -466,7 +466,9 @@ namespace RavenfieldVRMod
             Camera cam = __instance.GetActiveCamera();
             if (cam != null)
             {
-                // Restore the HMD-driven rotation/position that was set in Update
+                // Restore the HMD-driven rotation/position that was set in Update.
+                // Application.onBeforeRender will re-apply HMD pose as the absolute
+                // last step before rendering, catching any overrides we miss here.
                 cam.transform.localRotation = savedLocalRot;
                 cam.transform.localPosition = savedLocalPos;
             }
