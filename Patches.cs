@@ -408,22 +408,22 @@ namespace RavenfieldVRMod
                 case SteelInput.KeyBinds.CarThrottle:
                     if (Mathf.Abs(ly) > 0.1f) __result = ly; break;
                 case SteelInput.KeyBinds.HeliRoll:
-                    if (Mathf.Abs(lx) > 0.1f) __result = lx; break;
+                    if (Mathf.Abs(lx) > 0.1f) __result = -lx; break;
                 case SteelInput.KeyBinds.HeliPitch:
                     if (Mathf.Abs(ly) > 0.1f) __result = ly; break;
                 case SteelInput.KeyBinds.HeliYaw:
-                    if (Mathf.Abs(rx) > 0.1f) __result = rx; break;
+                    if (Mathf.Abs(rx) > 0.1f) __result = -rx; break;
                 case SteelInput.KeyBinds.HeliThrottle:
-                    float ht = VRInput.RightTriggerAnalog - VRInput.LeftTriggerAnalog;
+                    float ht = VRInput.RightGripAnalog - VRInput.LeftGripAnalog;
                     if (Mathf.Abs(ht) > 0.1f) __result = ht; break;
                 case SteelInput.KeyBinds.PlaneRoll:
-                    if (Mathf.Abs(lx) > 0.1f) __result = lx; break;
+                    if (Mathf.Abs(lx) > 0.1f) __result = -lx; break;
                 case SteelInput.KeyBinds.PlanePitch:
                     if (Mathf.Abs(ly) > 0.1f) __result = ly; break;
                 case SteelInput.KeyBinds.PlaneYaw:
-                    if (Mathf.Abs(rx) > 0.1f) __result = rx; break;
+                    if (Mathf.Abs(rx) > 0.1f) __result = -rx; break;
                 case SteelInput.KeyBinds.PlaneThrottle:
-                    float pt = VRInput.RightTriggerAnalog - VRInput.LeftTriggerAnalog;
+                    float pt = VRInput.RightGripAnalog - VRInput.LeftGripAnalog;
                     if (Mathf.Abs(pt) > 0.1f) __result = pt; break;
 
                 // Turret aiming: joystick only, slower sensitivity
@@ -466,6 +466,15 @@ namespace RavenfieldVRMod
             Camera cam = __instance.GetActiveCamera();
             if (cam != null)
             {
+                // Save the game's aim direction (turret/vehicle) BEFORE restoring
+                // HMD rotation — used for the world-space crosshair marker
+                float angleDiff = Quaternion.Angle(cam.transform.localRotation, savedLocalRot);
+                if (angleDiff > 0.5f)
+                {
+                    VRCameraManager.GameAimWorldRotation = cam.transform.rotation;
+                    VRCameraManager.GameOverrodeCamera = true;
+                }
+
                 // Restore the HMD-driven rotation/position that was set in Update.
                 // Application.onBeforeRender will re-apply HMD pose as the absolute
                 // last step before rendering, catching any overrides we miss here.

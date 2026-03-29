@@ -33,6 +33,12 @@ namespace RavenfieldVRMod
         private static HashSet<int> protectedCanvasIds = new HashSet<int>();
         private static bool lastWasIngame;
 
+        // Turret/vehicle aim tracking — for world-space crosshair
+        internal static bool GameOverrodeCamera;
+        internal static Quaternion GameAimWorldRotation;
+        private static GameObject turretCrosshair;
+        private static bool parentTiltedOnEntry; // tank turret 90° pitch fix
+
         /// <summary>
         /// Mark a canvas as protected — ConvertCanvasesForVR will never touch it.
         /// Used by menu patches to prevent the HUD converter from damaging menu content.
@@ -68,6 +74,11 @@ namespace RavenfieldVRMod
         {
             vrActive = false;
             Application.onBeforeRender -= OnBeforeRender;
+            if (turretCrosshair != null)
+            {
+                Object.Destroy(turretCrosshair);
+                turretCrosshair = null;
+            }
             convertedCanvasIds.Clear();
 
             foreach (var cam in Camera.allCameras)
@@ -83,6 +94,7 @@ namespace RavenfieldVRMod
             if (!vrActive || !XRSettings.isDeviceActive)
                 return;
 
+            GameOverrodeCamera = false;
             startupFrame++;
 
             Camera activeCam = GetActiveCamera();
@@ -131,6 +143,12 @@ namespace RavenfieldVRMod
                     if (!savedOriginalPos && cam.transform.parent != null)
                         playerYaw = cam.transform.parent.eulerAngles.y;
                     savedOriginalPos = true;
+
+                    // Check parent tilt on entry only (not every frame).
+                    // Fixes tank turret with 90° pitch parent without
+                    // breaking barrel rolls / loops in aircraft.
+                    parentTiltedOnEntry = cam.transform.parent != null
+                        && Vector3.Dot(cam.transform.parent.up, Vector3.up) < 0.7f;
 
                     lastTrackedCamera = cam;
                 }
@@ -203,6 +221,8 @@ namespace RavenfieldVRMod
         /// absolute last transform before rendering, so no game script (vehicle,
         /// turret, death cam) can override it. Both eyes see the same rotation
         /// (unlike Camera.onPreCull which fires per-eye in multi-pass stereo).
+        ///
+        /// Only forces ROTATION — position is handled by ApplyHMDTracking in Update.
         /// </summary>
         private static void OnBeforeRender()
         {
@@ -210,17 +230,63 @@ namespace RavenfieldVRMod
             Camera cam = GetActiveCamera();
             if (cam == null) return;
 
-            // Only force ROTATION here — position is handled by ApplyHMDTracking
-            // in Update, where the game can still adjust it in LateUpdate
-            // (deployment repositioning, vehicle seats, etc.)
             hmdDevices.Clear();
             InputDevices.GetDevicesAtXRNode(XRNode.Head, hmdDevices);
             foreach (var hmd in hmdDevices)
             {
                 if (!hmd.isValid) continue;
                 if (hmd.TryGetFeatureValue(CommonUsages.deviceRotation, out Quaternion hmdRot))
-                    cam.transform.localRotation = hmdRot;
+                {
+                    // Detect late-running overrides not caught by Harmony patch
+                    // (vehicle scripts whose LateUpdate runs after ours)
+                    if (!GameOverrodeCamera)
+                    {
+                        float angleDiff = Quaternion.Angle(cam.transform.localRotation, hmdRot);
+                        if (angleDiff > 1f)
+                        {
+                            GameAimWorldRotation = cam.transform.rotation;
+                            GameOverrodeCamera = true;
+                        }
+                    }
+
+                    // Use world rotation only for cameras with tilted parents
+                    // on entry (e.g. tank turret with 90° pitch offset).
+                    // Checked once on entry, not every frame — so barrel rolls
+                    // and loops in aircraft don't trigger it.
+                    if (parentTiltedOnEntry)
+                        cam.transform.rotation = Quaternion.Euler(0, playerYaw, 0) * hmdRot;
+                    else
+                        cam.transform.localRotation = hmdRot;
+                }
                 break;
+            }
+
+            // Position turret/vehicle crosshair marker
+            UpdateTurretCrosshair(cam);
+        }
+
+        private static void UpdateTurretCrosshair(Camera cam)
+        {
+            if (turretCrosshair == null)
+            {
+                turretCrosshair = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                turretCrosshair.transform.localScale = new Vector3(0.4f, 0.4f, 0.4f);
+                Object.Destroy(turretCrosshair.GetComponent<Collider>());
+                var rend = turretCrosshair.GetComponent<Renderer>();
+                rend.material = new Material(Shader.Find("Sprites/Default"));
+                rend.material.color = new Color(0f, 1f, 0f, 0.9f);
+                Object.DontDestroyOnLoad(turretCrosshair);
+            }
+
+            if (GameOverrodeCamera && cam != null)
+            {
+                Vector3 aimForward = GameAimWorldRotation * Vector3.forward;
+                turretCrosshair.transform.position = cam.transform.position + aimForward * 50f;
+                turretCrosshair.SetActive(true);
+            }
+            else
+            {
+                turretCrosshair.SetActive(false);
             }
         }
 

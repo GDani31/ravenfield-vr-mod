@@ -35,7 +35,9 @@ namespace RavenfieldVRMod
         public static float LeftTriggerAnalog { get; private set; }
 
         public static bool RightGrip { get; private set; }
+        public static float RightGripAnalog { get; private set; }
         public static bool LeftGrip { get; private set; }
+        public static float LeftGripAnalog { get; private set; }
 
         // B button = ApplicationMenu (EVRButtonId 1)
         public static bool RightB { get; private set; }
@@ -91,6 +93,7 @@ namespace RavenfieldVRMod
                     RightStickY = state.rAxis0.y;
                     RightTriggerAnalog = state.rAxis1.x;
                     RightTrigger = state.rAxis1.x > 0.5f;
+                    RightGripAnalog = state.rAxis2.x;
                     RightGrip = (state.ulButtonPressed & (1UL << (int)EVRButtonId.k_EButton_Grip)) != 0;
                     RightB = (state.ulButtonPressed & (1UL << (int)EVRButtonId.k_EButton_ApplicationMenu)) != 0;
                     RightA = (state.ulButtonPressed & (1UL << (int)EVRButtonId.k_EButton_A)) != 0;
@@ -109,6 +112,7 @@ namespace RavenfieldVRMod
                     LeftStickY = state.rAxis0.y;
                     LeftTriggerAnalog = state.rAxis1.x;
                     LeftTrigger = state.rAxis1.x > 0.5f;
+                    LeftGripAnalog = state.rAxis2.x;
                     LeftGrip = (state.ulButtonPressed & (1UL << (int)EVRButtonId.k_EButton_Grip)) != 0;
                     LeftB = (state.ulButtonPressed & (1UL << (int)EVRButtonId.k_EButton_ApplicationMenu)) != 0;
                     LeftA = (state.ulButtonPressed & (1UL << (int)EVRButtonId.k_EButton_A)) != 0;
