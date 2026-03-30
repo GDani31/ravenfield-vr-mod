@@ -33,10 +33,9 @@ namespace RavenfieldVRMod
         private static HashSet<int> protectedCanvasIds = new HashSet<int>();
         private static bool lastWasIngame;
 
-        // Turret/vehicle aim tracking — for world-space crosshair
+        // Turret/vehicle aim tracking
         internal static bool GameOverrodeCamera;
-        internal static Quaternion GameAimWorldRotation;
-        private static GameObject turretCrosshair;
+        internal static bool IsOnTurret; // true if camera was overridden last frame (valid during Update)
         private static bool parentTiltedOnEntry; // tank turret 90° pitch fix
 
         /// <summary>
@@ -74,11 +73,6 @@ namespace RavenfieldVRMod
         {
             vrActive = false;
             Application.onBeforeRender -= OnBeforeRender;
-            if (turretCrosshair != null)
-            {
-                Object.Destroy(turretCrosshair);
-                turretCrosshair = null;
-            }
             convertedCanvasIds.Clear();
 
             foreach (var cam in Camera.allCameras)
@@ -94,6 +88,7 @@ namespace RavenfieldVRMod
             if (!vrActive || !XRSettings.isDeviceActive)
                 return;
 
+            IsOnTurret = GameOverrodeCamera;
             GameOverrodeCamera = false;
             startupFrame++;
 
@@ -244,7 +239,6 @@ namespace RavenfieldVRMod
                         float angleDiff = Quaternion.Angle(cam.transform.localRotation, hmdRot);
                         if (angleDiff > 1f)
                         {
-                            GameAimWorldRotation = cam.transform.rotation;
                             GameOverrodeCamera = true;
                         }
                     }
@@ -257,37 +251,14 @@ namespace RavenfieldVRMod
                         cam.transform.rotation = Quaternion.Euler(0, playerYaw, 0) * hmdRot;
                     else
                         cam.transform.localRotation = hmdRot;
+
+                    // Nudge camera slightly left on turrets so the crosshair isn't blocked
+                    if (IsOnTurret)
+                        cam.transform.position += cam.transform.right * -0.02f;
                 }
                 break;
             }
 
-            // Position turret/vehicle crosshair marker
-            UpdateTurretCrosshair(cam);
-        }
-
-        private static void UpdateTurretCrosshair(Camera cam)
-        {
-            if (turretCrosshair == null)
-            {
-                turretCrosshair = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                turretCrosshair.transform.localScale = new Vector3(0.4f, 0.4f, 0.4f);
-                Object.Destroy(turretCrosshair.GetComponent<Collider>());
-                var rend = turretCrosshair.GetComponent<Renderer>();
-                rend.material = new Material(Shader.Find("Sprites/Default"));
-                rend.material.color = new Color(0f, 1f, 0f, 0.9f);
-                Object.DontDestroyOnLoad(turretCrosshair);
-            }
-
-            if (GameOverrodeCamera && cam != null)
-            {
-                Vector3 aimForward = GameAimWorldRotation * Vector3.forward;
-                turretCrosshair.transform.position = cam.transform.position + aimForward * 50f;
-                turretCrosshair.SetActive(true);
-            }
-            else
-            {
-                turretCrosshair.SetActive(false);
-            }
         }
 
         /// <summary>

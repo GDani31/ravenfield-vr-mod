@@ -10,7 +10,7 @@ namespace RavenfieldVRMod
     /// - Left thumbstick → WASD (Horizontal/Vertical)
     /// - Right trigger → Fire (left mouse)
     /// - Right B → Reload
-    /// - Left B → Aim/zoom toggle
+    /// - Left B → NextWeapon
     /// - Left trigger → Jump
     /// - Left grip → Crouch
     /// - Right grip → Sprint

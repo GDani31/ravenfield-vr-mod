@@ -38,6 +38,7 @@ namespace RavenfieldVRMod
         }
     }
 
+
     // Pause menu → WorldSpace
     [HarmonyPatch(typeof(IngameMenuUi), "Show")]
     static class IngameMenuUiShowPatch
@@ -265,7 +266,7 @@ namespace RavenfieldVRMod
     // VR INPUT
     //
     // Right trigger = Fire
-    // Right grip    = Sprint
+    // Right grip    = Sprint (+ turret zoom when on turret)
     // Right B       = Reload
     // Right A       = Use (enter vehicles)
     // Right stick click = Open loadout
@@ -306,6 +307,8 @@ namespace RavenfieldVRMod
                     }
                     break;
                 case SteelInput.KeyBinds.Sprint: if (lh ? VRInput.LeftGrip : VRInput.RightGrip) __result = true; break;
+                case (SteelInput.KeyBinds)3: // Aim — grip when on turret
+                    if (VRCameraManager.IsOnTurret && (lh ? VRInput.LeftGrip : VRInput.RightGrip)) __result = true; break;
                 case SteelInput.KeyBinds.Use: if (lh ? VRInput.LeftA : VRInput.RightA) __result = true; break;
                 case SteelInput.KeyBinds.SquadLeaderKit: if (lh ? VRInput.LeftStickClick : VRInput.RightStickClick) __result = true; break;
                 case SteelInput.KeyBinds.OpenLoadout: if (lh ? VRInput.RightA : VRInput.LeftA) __result = true; break;
@@ -345,6 +348,8 @@ namespace RavenfieldVRMod
                         if (lh ? VRInput.RightTriggerDown : VRInput.LeftTriggerDown) __result = true;
                     }
                     break;
+                case (SteelInput.KeyBinds)3: // Aim — grip when on turret
+                    if (VRCameraManager.IsOnTurret && (lh ? VRInput.LeftGrip : VRInput.RightGrip)) __result = true; break;
                 case SteelInput.KeyBinds.Use: if (lh ? VRInput.LeftADown : VRInput.RightADown) __result = true; break;
                 case SteelInput.KeyBinds.SquadLeaderKit: if (lh ? VRInput.LeftStickClickDown : VRInput.RightStickClickDown) __result = true; break;
                 case SteelInput.KeyBinds.OpenLoadout: if (lh ? VRInput.RightADown : VRInput.LeftADown) __result = true; break;
@@ -426,13 +431,12 @@ namespace RavenfieldVRMod
                     float pt = VRInput.RightGripAnalog - VRInput.LeftGripAnalog;
                     if (Mathf.Abs(pt) > 0.1f) __result = pt; break;
 
-                // Turret aiming: joystick only, slower sensitivity
+                // Turret aiming: left joystick, slower sensitivity
                 // Head is free to look around independently of turret direction
                 case SteelInput.KeyBinds.AimX:
-                    if (Mathf.Abs(rx) > 0.1f) __result = -rx * 0.15f; break;
+                    if (Mathf.Abs(lx) > 0.1f) __result = -lx * 0.15f; break;
                 case SteelInput.KeyBinds.AimY:
-                    float ry = lh ? VRInput.LeftStickY : VRInput.RightStickY;
-                    if (Mathf.Abs(ry) > 0.1f) __result = -ry * 0.15f; break;
+                    if (Mathf.Abs(ly) > 0.1f) __result = -ly * 0.15f; break;
             }
         }
     }
@@ -466,12 +470,10 @@ namespace RavenfieldVRMod
             Camera cam = __instance.GetActiveCamera();
             if (cam != null)
             {
-                // Save the game's aim direction (turret/vehicle) BEFORE restoring
-                // HMD rotation — used for the world-space crosshair marker
+                // Detect turret/vehicle camera override BEFORE restoring HMD rotation
                 float angleDiff = Quaternion.Angle(cam.transform.localRotation, savedLocalRot);
                 if (angleDiff > 0.5f)
                 {
-                    VRCameraManager.GameAimWorldRotation = cam.transform.rotation;
                     VRCameraManager.GameOverrodeCamera = true;
                 }
 
@@ -499,11 +501,12 @@ namespace RavenfieldVRMod
         }
     }
     // Block PlayerFpParent.LateUpdate — it sets camera rotation/position
-    // for weapon bob, lean, recoil etc. which overrides HMD head tracking
+    // for weapon bob, lean, recoil etc. which overrides HMD head tracking.
+    // Allow on turret so aim FOV (zoom) can be processed.
     [HarmonyPatch(typeof(PlayerFpParent), "LateUpdate")]
     static class PlayerFpParentLateUpdatePatch
     {
-        static bool Prefix() { return !VRManager.IsVRActive; }
+        static bool Prefix() { return !VRManager.IsVRActive || VRCameraManager.IsOnTurret; }
     }
 
     [HarmonyPatch(typeof(PlayerFpParent), "SetupHorizontalFov")]
@@ -514,7 +517,8 @@ namespace RavenfieldVRMod
     [HarmonyPatch(typeof(PlayerFpParent), "SetAimFov")]
     static class PlayerFpParentAimFovPatch
     {
-        static bool Prefix() { return !VRManager.IsVRActive; }
+        // Allow aim FOV when on turret (zoom in); block on foot (no ADS in VR)
+        static bool Prefix() { return !VRManager.IsVRActive || VRCameraManager.IsOnTurret; }
     }
     // Block sprint "tuck" animation — Weapon.Update sets animator "tuck" = true
     // when sprinting, which lowers the weapon. In VR the weapon is held by

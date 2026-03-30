@@ -79,6 +79,9 @@ namespace RavenfieldVRMod
                 // Dominant A button = also SwitchFireMode (alongside Use)
                 HandleFireModeSwitch();
 
+                // Right grip = turret zoom when on turret
+                HandleTurretZoom();
+
                 // Right thumbstick for snap turning (45 degree increments)
                 HandleSnapTurn();
             }
@@ -119,6 +122,59 @@ namespace RavenfieldVRMod
                 if (Mathf.Abs(turnAxis) < 0.3f)
                     snapTurnReady = true;
             }
+        }
+
+        // ── Turret zoom via grip ──
+        private static bool turretZoomReflectionDone;
+        private static System.Reflection.MethodInfo setAimingMethod;   // Weapon.SetAiming(bool)
+        private static System.Reflection.FieldInfo weaponAimingField;  // Weapon.aiming
+        private static System.Reflection.FieldInfo actorFieldCached;
+        private static System.Reflection.FieldInfo activeWeaponFieldCached;
+
+        private void HandleTurretZoom()
+        {
+            if (!VRCameraManager.IsOnTurret || FpsActorController.instance == null) return;
+
+            bool grip = VRManager.LeftHanded ? VRInput.LeftGrip : VRInput.RightGrip;
+
+            if (!turretZoomReflectionDone)
+            {
+                turretZoomReflectionDone = true;
+                var bf = System.Reflection.BindingFlags.Instance |
+                         System.Reflection.BindingFlags.Public |
+                         System.Reflection.BindingFlags.NonPublic;
+
+                actorFieldCached = typeof(FpsActorController).GetField("actor", bf);
+                if (actorFieldCached != null)
+                {
+                    activeWeaponFieldCached = actorFieldCached.FieldType.GetField("activeWeapon", bf);
+                    if (activeWeaponFieldCached != null)
+                    {
+                        setAimingMethod = activeWeaponFieldCached.FieldType.GetMethod("SetAiming", bf);
+                        weaponAimingField = activeWeaponFieldCached.FieldType.GetField("aiming", bf);
+                        Logger.LogInfo($"VR Turret Zoom: SetAiming={setAimingMethod != null} aiming={weaponAimingField != null}");
+                    }
+                }
+            }
+
+            // Call Weapon.SetAiming(grip) every frame — true while held, false on release
+            try
+            {
+                object actor = actorFieldCached?.GetValue(FpsActorController.instance);
+                if (actor != null)
+                {
+                    object weapon = activeWeaponFieldCached?.GetValue(actor);
+                    if (weapon != null && grip)
+                    {
+                        if (setAimingMethod != null)
+                            setAimingMethod.Invoke(weapon, new object[] { true });
+                        else if (weaponAimingField != null)
+                            weaponAimingField.SetValue(weapon, true);
+
+                    }
+                }
+            }
+            catch { }
         }
 
         private static System.Reflection.MethodInfo switchFireModeMethod;

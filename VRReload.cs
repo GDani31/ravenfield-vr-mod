@@ -239,7 +239,10 @@ namespace RavenfieldVRMod
             if (offOk && heldClone != null)
             {
                 heldClone.transform.position = offHand.transform.position;
-                heldClone.transform.rotation = offHand.transform.rotation;
+                heldClone.transform.rotation = offHand.transform.rotation
+                    * Quaternion.AngleAxis(180f, Vector3.right)    // flip upside down
+                    * Quaternion.AngleAxis(180f, Vector3.forward)  // flip left-right
+                    * Quaternion.AngleAxis(-90f, Vector3.right);   // tilt forward
             }
 
             if (!offOk || !triggerUp) return;
