@@ -88,6 +88,6 @@ steamapps/common/Ravenfield/
 
 3. Launch Ravenfield.
 
-## License
+## Video tutorial
 
-MIT
+https://youtu.be/OqkZFleVvqk
