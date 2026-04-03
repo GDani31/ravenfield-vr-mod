@@ -50,6 +50,10 @@ There is a setting to enable manual reloading. When enabled, you physically pick
 1. Install BepInEx 5 into your Ravenfield folder (`<Steam>/steamapps/common/Ravenfield/`).
 2. Download all files from the [Releases](https://github.com/GDani31/ravenfield-vr-mod/releases) tab and place them:
    - `RavenfieldVRMod.dll` → `BepInEx/plugins/`
+   - `actions.json` → `BepInEx/plugins/`
+   - `bindings_oculus_touch.json` → `BepInEx/plugins/`
+   - `bindings_knuckles.json` → `BepInEx/plugins/`
+   - `bindings_vive_controller.json` → `BepInEx/plugins/`
    - `Unity.XR.Management.dll` → `ravenfield_Data/Managed/`
    - `Unity.XR.OpenVR.dll` → `ravenfield_Data/Managed/`
    - `XRSDKOpenVR.dll` → `ravenfield_Data/Plugins/x86_64/`
