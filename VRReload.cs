@@ -1,6 +1,5 @@
 using System.Reflection;
 using UnityEngine;
-using Valve.VR;
 
 namespace RavenfieldVRMod
 {
@@ -741,8 +740,11 @@ namespace RavenfieldVRMod
 
         private void Haptic(uint idx, ushort us)
         {
-            if (idx != OpenVR.k_unTrackedDeviceIndexInvalid && OpenVR.System != null)
-                OpenVR.System.TriggerHapticPulse(idx, 0, us);
+            // Determine which hand by comparing device index to VRControllers' known indices
+            if (VRControllers.Instance == null) return;
+            bool isLeft = (idx == VRControllers.Instance.LeftDeviceIndex);
+            float seconds = us / 1_000_000f;
+            VRInput.TriggerHaptic(isLeft, seconds, 320f, 1f);
         }
 
         private void OnDestroy()

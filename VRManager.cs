@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using UnityEngine;
@@ -207,6 +208,9 @@ namespace RavenfieldVRMod
                 xrManager.StartSubsystems();
                 yield return null;
 
+                // Initialize SteamVR action system for controller bindings
+                InitializeActionSystem();
+
                 if (XRSettings.isDeviceActive)
                 {
                     Plugin.Log.LogInfo($"VR is running! Device: {XRSettings.loadedDeviceName}, " +
@@ -241,6 +245,37 @@ namespace RavenfieldVRMod
                 xrManager.StopSubsystems();
                 xrManager.DeinitializeLoader();
                 Plugin.Log.LogInfo("XR stopped.");
+            }
+        }
+
+        /// <summary>
+        /// Locate actions.json next to the plugin DLL and register it with SteamVR.
+        /// This enables user-customizable controller bindings via SteamVR Settings.
+        /// </summary>
+        private static void InitializeActionSystem()
+        {
+            try
+            {
+                string pluginDir = Path.GetDirectoryName(
+                    System.Reflection.Assembly.GetExecutingAssembly().Location);
+                string actionsPath = Path.GetFullPath(Path.Combine(pluginDir, "actions.json"));
+
+                if (!File.Exists(actionsPath))
+                {
+                    Plugin.Log.LogWarning($"VR: actions.json not found at {actionsPath} — controller bindings disabled. " +
+                                          "Place actions.json and bindings_*.json next to RavenfieldVRMod.dll.");
+                    return;
+                }
+
+                if (VRInput.InitializeActions(actionsPath))
+                {
+                    Plugin.Log.LogInfo("VR: SteamVR controller bindings enabled. " +
+                                       "Customize in SteamVR Settings → Controller Bindings.");
+                }
+            }
+            catch (System.Exception e)
+            {
+                Plugin.Log.LogError($"VR: Action system init failed: {e.Message}");
             }
         }
     }

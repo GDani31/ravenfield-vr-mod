@@ -1,0 +1,92 @@
+{
+  "controller_type": "oculus_touch",
+  "description": "Ravenfield VR default bindings for Meta Quest / Oculus Touch controllers",
+  "bindings": {
+    "/actions/default": {
+      "sources": [
+        {
+          "path": "/user/hand/left/input/trigger",
+          "mode": "trigger",
+          "inputs": {
+            "pull": { "output": "/actions/default/in/Trigger" }
+          }
+        },
+        {
+          "path": "/user/hand/right/input/trigger",
+          "mode": "trigger",
+          "inputs": {
+            "pull": { "output": "/actions/default/in/Trigger" }
+          }
+        },
+        {
+          "path": "/user/hand/left/input/grip",
+          "mode": "trigger",
+          "inputs": {
+            "pull": { "output": "/actions/default/in/Grip" }
+          }
+        },
+        {
+          "path": "/user/hand/right/input/grip",
+          "mode": "trigger",
+          "inputs": {
+            "pull": { "output": "/actions/default/in/Grip" }
+          }
+        },
+        {
+          "path": "/user/hand/left/input/joystick",
+          "mode": "joystick",
+          "inputs": {
+            "position": { "output": "/actions/default/in/Stick" },
+            "click": { "output": "/actions/default/in/StickClick" }
+          }
+        },
+        {
+          "path": "/user/hand/right/input/joystick",
+          "mode": "joystick",
+          "inputs": {
+            "position": { "output": "/actions/default/in/Stick" },
+            "click": { "output": "/actions/default/in/StickClick" }
+          }
+        },
+        {
+          "path": "/user/hand/left/input/x",
+          "mode": "button",
+          "inputs": {
+            "click": { "output": "/actions/default/in/ButtonA" }
+          }
+        },
+        {
+          "path": "/user/hand/right/input/a",
+          "mode": "button",
+          "inputs": {
+            "click": { "output": "/actions/default/in/ButtonA" }
+          }
+        },
+        {
+          "path": "/user/hand/left/input/y",
+          "mode": "button",
+          "inputs": {
+            "click": { "output": "/actions/default/in/ButtonB" }
+          }
+        },
+        {
+          "path": "/user/hand/right/input/b",
+          "mode": "button",
+          "inputs": {
+            "click": { "output": "/actions/default/in/ButtonB" }
+          }
+        }
+      ],
+      "haptics": [
+        {
+          "path": "/user/hand/left/output/haptic",
+          "output": "/actions/default/out/Haptic"
+        },
+        {
+          "path": "/user/hand/right/output/haptic",
+          "output": "/actions/default/out/Haptic"
+        }
+      ]
+    }
+  }
+}

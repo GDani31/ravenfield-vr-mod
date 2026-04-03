@@ -1,0 +1,41 @@
+{
+  "default_bindings": [
+    {
+      "controller_type": "oculus_touch",
+      "binding_url": "bindings_oculus_touch.json"
+    },
+    {
+      "controller_type": "knuckles",
+      "binding_url": "bindings_knuckles.json"
+    },
+    {
+      "controller_type": "vive_controller",
+      "binding_url": "bindings_vive_controller.json"
+    }
+  ],
+  "actions": [
+    { "name": "/actions/default/in/Trigger", "type": "vector1", "requirement": "mandatory" },
+    { "name": "/actions/default/in/Grip", "type": "vector1", "requirement": "mandatory" },
+    { "name": "/actions/default/in/Stick", "type": "vector2", "requirement": "mandatory" },
+    { "name": "/actions/default/in/ButtonA", "type": "boolean", "requirement": "mandatory" },
+    { "name": "/actions/default/in/ButtonB", "type": "boolean", "requirement": "mandatory" },
+    { "name": "/actions/default/in/StickClick", "type": "boolean", "requirement": "suggested" },
+    { "name": "/actions/default/out/Haptic", "type": "vibration", "requirement": "suggested" }
+  ],
+  "action_sets": [
+    { "name": "/actions/default", "usage": "leftright" }
+  ],
+  "localization": [
+    {
+      "language_tag": "en_US",
+      "/actions/default": "Ravenfield VR",
+      "/actions/default/in/Trigger": "Trigger (Fire / Jump)",
+      "/actions/default/in/Grip": "Grip (Sprint / Two-Hand Grip)",
+      "/actions/default/in/Stick": "Thumbstick (Move / Turn)",
+      "/actions/default/in/ButtonA": "A/X Button (Use / Loadout)",
+      "/actions/default/in/ButtonB": "B/Y Button (Reload / Switch Weapon)",
+      "/actions/default/in/StickClick": "Stick Click (Pause / Map)",
+      "/actions/default/out/Haptic": "Haptic Feedback"
+    }
+  ]
+}

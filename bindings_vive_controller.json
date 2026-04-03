@@ -1,0 +1,78 @@
+{
+  "controller_type": "vive_controller",
+  "description": "Ravenfield VR default bindings for HTC Vive wand controllers",
+  "bindings": {
+    "/actions/default": {
+      "sources": [
+        {
+          "path": "/user/hand/left/input/trigger",
+          "mode": "trigger",
+          "inputs": {
+            "pull": { "output": "/actions/default/in/Trigger" }
+          }
+        },
+        {
+          "path": "/user/hand/right/input/trigger",
+          "mode": "trigger",
+          "inputs": {
+            "pull": { "output": "/actions/default/in/Trigger" }
+          }
+        },
+        {
+          "path": "/user/hand/left/input/grip",
+          "mode": "button",
+          "inputs": {
+            "click": { "output": "/actions/default/in/Grip" }
+          }
+        },
+        {
+          "path": "/user/hand/right/input/grip",
+          "mode": "button",
+          "inputs": {
+            "click": { "output": "/actions/default/in/Grip" }
+          }
+        },
+        {
+          "path": "/user/hand/left/input/trackpad",
+          "mode": "joystick",
+          "inputs": {
+            "position": { "output": "/actions/default/in/Stick" },
+            "click": { "output": "/actions/default/in/StickClick" }
+          }
+        },
+        {
+          "path": "/user/hand/right/input/trackpad",
+          "mode": "joystick",
+          "inputs": {
+            "position": { "output": "/actions/default/in/Stick" },
+            "click": { "output": "/actions/default/in/StickClick" }
+          }
+        },
+        {
+          "path": "/user/hand/left/input/application_menu",
+          "mode": "button",
+          "inputs": {
+            "click": { "output": "/actions/default/in/ButtonB" }
+          }
+        },
+        {
+          "path": "/user/hand/right/input/application_menu",
+          "mode": "button",
+          "inputs": {
+            "click": { "output": "/actions/default/in/ButtonB" }
+          }
+        }
+      ],
+      "haptics": [
+        {
+          "path": "/user/hand/left/output/haptic",
+          "output": "/actions/default/out/Haptic"
+        },
+        {
+          "path": "/user/hand/right/output/haptic",
+          "output": "/actions/default/out/Haptic"
+        }
+      ]
+    }
+  }
+}

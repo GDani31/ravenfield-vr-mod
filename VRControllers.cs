@@ -10,10 +10,10 @@ namespace RavenfieldVRMod
     /// <summary>
     /// VR controller tracking using OpenVR API directly.
     ///
-    /// Unity's InputDevice API goes stale and buttons don't work because
-    /// there are no SteamVR action bindings configured. Instead we call
-    /// OpenVR.System.GetDeviceToAbsoluteTrackingPose() directly for
-    /// live pose data, and IVRSystem.GetControllerState() for buttons.
+    /// Pose tracking uses OpenVR.Compositor.GetLastPoses() for reliable
+    /// per-frame hand positions. Button/axis input is handled by VRInput
+    /// via the SteamVR action system (IVRInput), which enables user-
+    /// customizable controller bindings in SteamVR Settings.
     /// </summary>
     public class VRControllers : MonoBehaviour
     {
