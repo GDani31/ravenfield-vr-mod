@@ -79,12 +79,31 @@ namespace RavenfieldVRMod
             }
         }
 
+        public void UpdateHandOpacity()
+        {
+            float alpha = VRManager.HandOpacity / 100f;
+            SetHandAlpha(leftHand, alpha);
+            SetHandAlpha(rightHand, alpha);
+        }
+
+        private static void SetHandAlpha(GameObject hand, float alpha)
+        {
+            if (hand == null) return;
+            var renderer = hand.GetComponent<Renderer>();
+            if (renderer != null && renderer.material != null)
+            {
+                Color c = renderer.material.color;
+                renderer.material.color = new Color(c.r, c.g, c.b, alpha);
+            }
+        }
+
         private void Awake()
         {
             try
             {
-                leftHand = CreateHand("VR Left Hand", new Color(0.2f, 0.5f, 1f, 0.3f));
-                rightHand = CreateHand("VR Right Hand", new Color(1f, 0.3f, 0.3f, 0.3f));
+                float handAlpha = VRManager.HandOpacity / 100f;
+                leftHand = CreateHand("VR Left Hand", new Color(0.2f, 0.5f, 1f, handAlpha));
+                rightHand = CreateHand("VR Right Hand", new Color(1f, 0.3f, 0.3f, handAlpha));
                 leftLaser = CreateLaser(leftHand, new Color(0.2f, 0.5f, 1f, 0.25f));
                 rightLaser = CreateLaser(rightHand, new Color(1f, 0.3f, 0.3f, 0.25f));
                 leftLaser.enabled = false;

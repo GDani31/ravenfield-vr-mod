@@ -24,14 +24,20 @@ namespace RavenfieldVRMod
 
         private static readonly int[] snapAngles = { 15, 30, 45, 60, 90 };
         private static readonly int[] fovValues = { 70, 80, 90, 100, 110 };
+        private static readonly int[] smoothTurnSpeeds = { 45, 60, 90, 120, 150, 180 };
+        private static readonly int[] handOpacityValues = { 0, 10, 20, 30, 50, 70, 100 };
         private static Text vrStatusText;
+        private static Text smoothTurnSpeedText;
+        private static Text handOpacityText;
 
         // Standalone VR settings panel (WorldSpace, overlays Options content area in VR)
         private static GameObject vrSettingsPanel;
         private static Text panelSnapTurnVal;
         private static Text panelAngleVal;
+        private static Text panelTurnSpeedVal;
         private static Text panelLeftHandVal;
         private static Text panelGestureReloadVal;
+        private static Text panelHandOpacityVal;
 
         /// <summary>
         /// Injects the VR toggle into the Options video tab.
@@ -150,6 +156,34 @@ namespace RavenfieldVRMod
                     VRManager.LeftHanded = val;
                 });
             }
+
+            // Smooth Turn Speed (cycles on click)
+            var turnSpeedObj = Object.Instantiate(template, parent);
+            turnSpeedObj.name = "VR Smooth Turn Speed";
+            Object.Destroy(turnSpeedObj.GetComponent<OptionToggle>());
+            turnSpeedObj.transform.SetSiblingIndex(5);
+            smoothTurnSpeedText = turnSpeedObj.GetComponentInChildren<Text>();
+            UpdateSmoothTurnSpeedText();
+            var turnSpeedTrigger = turnSpeedObj.GetComponentInChildren<Toggle>();
+            if (turnSpeedTrigger != null)
+            {
+                turnSpeedTrigger.onValueChanged = new Toggle.ToggleEvent();
+                turnSpeedTrigger.onValueChanged.AddListener((_) => CycleSmoothTurnSpeed());
+            }
+
+            // Hand Opacity (cycles on click)
+            var opacityObj = Object.Instantiate(template, parent);
+            opacityObj.name = "VR Hand Opacity";
+            Object.Destroy(opacityObj.GetComponent<OptionToggle>());
+            opacityObj.transform.SetSiblingIndex(6);
+            handOpacityText = opacityObj.GetComponentInChildren<Text>();
+            UpdateHandOpacityText();
+            var opacityTrigger = opacityObj.GetComponentInChildren<Toggle>();
+            if (opacityTrigger != null)
+            {
+                opacityTrigger.onValueChanged = new Toggle.ToggleEvent();
+                opacityTrigger.onValueChanged.AddListener((_) => CycleHandOpacity());
+            }
         }
 
         private static void CycleSnapAngle()
@@ -186,6 +220,44 @@ namespace RavenfieldVRMod
         {
             if (fovText != null)
                 fovText.text = $"FOV: {VRManager.VRFieldOfView}";
+        }
+
+        private static void CycleSmoothTurnSpeed()
+        {
+            int current = VRManager.SmoothTurnSpeed;
+            int nextIdx = 0;
+            for (int i = 0; i < smoothTurnSpeeds.Length; i++)
+            {
+                if (smoothTurnSpeeds[i] == current) { nextIdx = (i + 1) % smoothTurnSpeeds.Length; break; }
+            }
+            VRManager.SmoothTurnSpeed = smoothTurnSpeeds[nextIdx];
+            UpdateSmoothTurnSpeedText();
+        }
+
+        private static void UpdateSmoothTurnSpeedText()
+        {
+            if (smoothTurnSpeedText != null)
+                smoothTurnSpeedText.text = $"Turn Speed: {VRManager.SmoothTurnSpeed}\u00B0/s";
+        }
+
+        private static void CycleHandOpacity()
+        {
+            int current = VRManager.HandOpacity;
+            int nextIdx = 0;
+            for (int i = 0; i < handOpacityValues.Length; i++)
+            {
+                if (handOpacityValues[i] == current) { nextIdx = (i + 1) % handOpacityValues.Length; break; }
+            }
+            VRManager.HandOpacity = handOpacityValues[nextIdx];
+            UpdateHandOpacityText();
+            if (VRControllers.Instance != null)
+                VRControllers.Instance.UpdateHandOpacity();
+        }
+
+        private static void UpdateHandOpacityText()
+        {
+            if (handOpacityText != null)
+                handOpacityText.text = $"Hand Opacity: {VRManager.HandOpacity}%";
         }
 
         /// <summary>
@@ -383,7 +455,7 @@ namespace RavenfieldVRMod
             vrSettingsPanel.AddComponent<GraphicRaycaster>();
 
             var panelRect = vrSettingsPanel.GetComponent<RectTransform>();
-            panelRect.sizeDelta = new Vector2(400, 360);
+            panelRect.sizeDelta = new Vector2(400, 460);
             panelRect.localScale = Vector3.one * 0.002f;
 
             // Dark background
@@ -410,16 +482,20 @@ namespace RavenfieldVRMod
             titleText.alignment = TextAnchor.MiddleCenter;
             titleText.raycastTarget = false;
             var titleRect = titleGO.GetComponent<RectTransform>();
-            titleRect.anchoredPosition = new Vector2(0, 150);
+            titleRect.anchoredPosition = new Vector2(0, 200);
             titleRect.sizeDelta = new Vector2(380, 40);
 
             // Setting rows
-            panelSnapTurnVal = CreatePanelRow(vrSettingsPanel.transform, font, "Snap Turn", 90, () => {
+            panelSnapTurnVal = CreatePanelRow(vrSettingsPanel.transform, font, "Snap Turn", 140, () => {
                 VRManager.TurnMode = VRManager.TurnMode == 0 ? 1 : 0;
                 RefreshPanelValues();
             });
-            panelAngleVal = CreatePanelRow(vrSettingsPanel.transform, font, "Snap Angle", 40, () => {
+            panelAngleVal = CreatePanelRow(vrSettingsPanel.transform, font, "Snap Angle", 90, () => {
                 CycleSnapAngle();
+                RefreshPanelValues();
+            });
+            panelTurnSpeedVal = CreatePanelRow(vrSettingsPanel.transform, font, "Turn Speed", 40, () => {
+                CycleSmoothTurnSpeed();
                 RefreshPanelValues();
             });
             panelLeftHandVal = CreatePanelRow(vrSettingsPanel.transform, font, "Left Handed", -10, () => {
@@ -430,12 +506,16 @@ namespace RavenfieldVRMod
                 VRReload.Enabled = !VRReload.Enabled;
                 RefreshPanelValues();
             });
+            panelHandOpacityVal = CreatePanelRow(vrSettingsPanel.transform, font, "Hand Opacity", -110, () => {
+                CycleHandOpacity();
+                RefreshPanelValues();
+            });
 
             // Close button
             var closeGO = new GameObject("Close");
             closeGO.transform.SetParent(vrSettingsPanel.transform, false);
             var closeRect = closeGO.AddComponent<RectTransform>();
-            closeRect.anchoredPosition = new Vector2(0, -130);
+            closeRect.anchoredPosition = new Vector2(0, -170);
             closeRect.sizeDelta = new Vector2(160, 42);
             var closeImg = closeGO.AddComponent<Image>();
             closeImg.color = new Color(0.3f, 0.12f, 0.12f, 0.95f);
@@ -559,10 +639,14 @@ namespace RavenfieldVRMod
                 panelSnapTurnVal.text = VRManager.TurnMode == 1 ? "ON" : "OFF";
             if (panelAngleVal != null)
                 panelAngleVal.text = $"{VRManager.SnapAngle}\u00B0";
+            if (panelTurnSpeedVal != null)
+                panelTurnSpeedVal.text = $"{VRManager.SmoothTurnSpeed}\u00B0/s";
             if (panelLeftHandVal != null)
                 panelLeftHandVal.text = VRManager.LeftHanded ? "ON" : "OFF";
             if (panelGestureReloadVal != null)
                 panelGestureReloadVal.text = VRReload.Enabled ? "ON" : "OFF";
+            if (panelHandOpacityVal != null)
+                panelHandOpacityVal.text = $"{VRManager.HandOpacity}%";
         }
     }
 }

@@ -107,7 +107,7 @@ namespace RavenfieldVRMod
                 // Free rotation (default)
                 if (Mathf.Abs(turnAxis) > 0.5f)
                 {
-                    float turnSpeed = 90f * Mathf.Sign(turnAxis);
+                    float turnSpeed = VRManager.SmoothTurnSpeed * Mathf.Sign(turnAxis);
                     VRCameraManager.RotatePlayer(turnSpeed * Time.deltaTime);
                 }
             }

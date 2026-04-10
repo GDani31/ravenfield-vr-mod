@@ -1,0 +1,104 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'V*'
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      # Create the directory structure the csproj expects (GameDir = ../)
+      - name: Setup game directory structure
+        shell: bash
+        run: |
+          mkdir -p ../BepInEx/core
+          mkdir -p ../ravenfield_Data/Managed
+          mkdir -p ../ravenfield_Data/Plugins/x86_64
+
+      # Download BepInEx 5.4 for BepInEx.dll and 0Harmony.dll
+      - name: Download BepInEx
+        shell: bash
+        run: |
+          curl -sL -o bepinex.zip "https://github.com/BepInEx/BepInEx/releases/download/v5.4.22/BepInEx_x64_5.4.22.0.zip"
+          unzip -o bepinex.zip -d bepinex_temp
+          cp bepinex_temp/BepInEx/core/BepInEx.dll ../BepInEx/core/
+          cp bepinex_temp/BepInEx/core/0Harmony.dll ../BepInEx/core/
+          rm -rf bepinex_temp bepinex.zip
+
+      # Copy game reference assemblies (committed to libs/game-refs/)
+      - name: Install game reference assemblies
+        shell: bash
+        run: |
+          cp libs/game-refs/*.dll ../ravenfield_Data/Managed/
+
+      # Build (SetupVRDependencies auto-downloads VR libs on first build)
+      - name: Build mod
+        run: dotnet build -c Release
+
+      # Collect all release files into a staging folder
+      - name: Collect release files
+        shell: bash
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          RELEASE_DIR="Ravenfield_VR_Mod_${TAG}"
+          mkdir -p "$RELEASE_DIR"
+
+          # Built mod DLL + SteamVR configs
+          cp bin/Release/net472/RavenfieldVRMod.dll "$RELEASE_DIR/"
+          cp bin/Release/net472/actions.json "$RELEASE_DIR/"
+          cp bin/Release/net472/bindings_oculus_touch.json "$RELEASE_DIR/"
+          cp bin/Release/net472/bindings_knuckles.json "$RELEASE_DIR/"
+          cp bin/Release/net472/bindings_vive_controller.json "$RELEASE_DIR/"
+
+          # VR dependency DLLs (built/installed by SetupVRDependencies)
+          cp ../ravenfield_Data/Managed/Unity.XR.Management.dll "$RELEASE_DIR/"
+          cp ../ravenfield_Data/Managed/Unity.XR.OpenVR.dll "$RELEASE_DIR/"
+          cp ../ravenfield_Data/Plugins/x86_64/XRSDKOpenVR.dll "$RELEASE_DIR/"
+          cp ../ravenfield_Data/Plugins/x86_64/openvr_api.dll "$RELEASE_DIR/"
+          cp ../ravenfield_Data/UnitySubsystems/XRSDKOpenVR/UnitySubsystemsManifest.json "$RELEASE_DIR/"
+
+          echo "Release files:"
+          ls -la "$RELEASE_DIR/"
+
+      # Zip the release folder
+      - name: Create release zip
+        shell: bash
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          RELEASE_DIR="Ravenfield_VR_Mod_${TAG}"
+          7z a "${RELEASE_DIR}.zip" "./${RELEASE_DIR}/*"
+
+      # Extract release notes from annotated tag message
+      - name: Get tag message
+        id: tag_message
+        shell: bash
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          # Try to get annotated tag message; fall back to tag name
+          MSG=$(git tag -l --format='%(contents)' "$TAG" 2>/dev/null || echo "")
+          if [ -z "$MSG" ]; then
+            MSG="Release ${TAG}"
+          fi
+          # Write multiline string to output
+          echo "notes<<EOF" >> $GITHUB_OUTPUT
+          echo "$MSG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      # Create GitHub Release with the zip
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          body: ${{ steps.tag_message.outputs.notes }}
+          files: Ravenfield_VR_Mod_${{ github.ref_name }}.zip

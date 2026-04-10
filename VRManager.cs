@@ -62,6 +62,16 @@ namespace RavenfieldVRMod
             get => PlayerPrefs.GetInt("vr_left_handed", 0) == 1;
             set { PlayerPrefs.SetInt("vr_left_handed", value ? 1 : 0); PlayerPrefs.Save(); }
         }
+        public static int SmoothTurnSpeed
+        {
+            get => PlayerPrefs.GetInt("vr_smooth_turn_speed", 90);
+            set { PlayerPrefs.SetInt("vr_smooth_turn_speed", value); PlayerPrefs.Save(); }
+        }
+        public static int HandOpacity
+        {
+            get => PlayerPrefs.GetInt("vr_hand_opacity", 30);
+            set { PlayerPrefs.SetInt("vr_hand_opacity", value); PlayerPrefs.Save(); }
+        }
 
         private static XRGeneralSettings generalSettings;
         private static XRManagerSettings xrManager;
