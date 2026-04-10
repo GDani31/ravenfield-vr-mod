@@ -449,6 +449,7 @@ namespace RavenfieldVRMod
     {
         private static Quaternion savedLocalRot;
         private static Vector3 savedLocalPos;
+        private static float savedFov;
         private static bool hasSaved;
 
         static void Prefix(FpsActorController __instance)
@@ -459,6 +460,7 @@ namespace RavenfieldVRMod
             {
                 savedLocalRot = cam.transform.localRotation;
                 savedLocalPos = cam.transform.localPosition;
+                savedFov = cam.fieldOfView;
                 hasSaved = true;
             }
         }
@@ -482,6 +484,13 @@ namespace RavenfieldVRMod
                 // last step before rendering, catching any overrides we miss here.
                 cam.transform.localRotation = savedLocalRot;
                 cam.transform.localPosition = savedLocalPos;
+                cam.fieldOfView = savedFov;
+
+                // Clear ALL custom matrices the game's turret/vehicle code may have
+                // set — view, projection, and culling matrices all need resetting.
+                cam.ResetWorldToCameraMatrix();
+                cam.ResetProjectionMatrix();
+                cam.ResetCullingMatrix();
             }
         }
     }
@@ -502,11 +511,13 @@ namespace RavenfieldVRMod
     }
     // Block PlayerFpParent.LateUpdate — it sets camera rotation/position
     // for weapon bob, lean, recoil etc. which overrides HMD head tracking.
-    // Allow on turret so aim FOV (zoom) can be processed.
+    // Also blocked on turrets: it sets a custom worldToCameraMatrix that
+    // causes the skybox to rotate with the head. Turret zoom is handled
+    // independently by Plugin.HandleTurretZoom().
     [HarmonyPatch(typeof(PlayerFpParent), "LateUpdate")]
     static class PlayerFpParentLateUpdatePatch
     {
-        static bool Prefix() { return !VRManager.IsVRActive || VRCameraManager.IsOnTurret; }
+        static bool Prefix() { return !VRManager.IsVRActive; }
     }
 
     [HarmonyPatch(typeof(PlayerFpParent), "SetupHorizontalFov")]
@@ -517,8 +528,10 @@ namespace RavenfieldVRMod
     [HarmonyPatch(typeof(PlayerFpParent), "SetAimFov")]
     static class PlayerFpParentAimFovPatch
     {
-        // Allow aim FOV when on turret (zoom in); block on foot (no ADS in VR)
-        static bool Prefix() { return !VRManager.IsVRActive || VRCameraManager.IsOnTurret; }
+        // Block aim FOV in VR — it sets custom projection matrices that cause
+        // the skybox to rotate with the head on turrets. Turret zoom is handled
+        // independently by Plugin.HandleTurretZoom() via Weapon.SetAiming().
+        static bool Prefix() { return !VRManager.IsVRActive; }
     }
     // Block sprint "tuck" animation — Weapon.Update sets animator "tuck" = true
     // when sprinting, which lowers the weapon. In VR the weapon is held by

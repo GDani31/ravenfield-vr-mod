@@ -88,15 +88,21 @@ namespace RavenfieldVRMod
             if (!vrActive || !XRSettings.isDeviceActive)
                 return;
 
+            bool wasTurret = IsOnTurret;
             IsOnTurret = GameOverrodeCamera;
             GameOverrodeCamera = false;
             startupFrame++;
+
+            // One-time sky diagnostic when entering a turret
+            if (IsOnTurret && !wasTurret)
+                DumpSkyDiagnostics();
 
             Camera activeCam = GetActiveCamera();
             if (activeCam != null)
             {
                 EnsureStereo(activeCam);
                 ApplyHMDTracking(activeCam);
+                SyncBackgroundCamera(activeCam);
                 ManageFallbackCamera(activeCam);
             }
 
@@ -200,7 +206,10 @@ namespace RavenfieldVRMod
             {
                 if (!hmd.isValid) continue;
                 if (hmd.TryGetFeatureValue(CommonUsages.deviceRotation, out Quaternion hmdRot))
+                {
                     cam.transform.localRotation = hmdRot;
+                    SyncBackgroundCamera(cam);
+                }
                 break;
             }
         }
@@ -243,18 +252,16 @@ namespace RavenfieldVRMod
                         }
                     }
 
-                    // Use world rotation only for cameras with tilted parents
-                    // on entry (e.g. tank turret with 90° pitch offset).
-                    // Checked once on entry, not every frame — so barrel rolls
-                    // and loops in aircraft don't trigger it.
                     if (parentTiltedOnEntry)
                         cam.transform.rotation = Quaternion.Euler(0, playerYaw, 0) * hmdRot;
                     else
                         cam.transform.localRotation = hmdRot;
 
-                    // Nudge camera slightly left on turrets so the crosshair isn't blocked
                     if (IsOnTurret)
                         cam.transform.position += cam.transform.right * -0.02f;
+
+                    // Keep the background camera (skybox) in sync
+                    SyncBackgroundCamera(cam);
                 }
                 break;
             }
@@ -527,6 +534,83 @@ namespace RavenfieldVRMod
                         canvas.worldCamera = cam;
                 }
             }
+        }
+
+        private static Camera bgCamera;
+
+        /// <summary>
+        /// Syncs the game's "Background Camera" (which renders the skybox) with
+        /// the active VR camera. Without this, the skybox has no head tracking
+        /// and appears to rotate with the player's head.
+        /// </summary>
+        private static void SyncBackgroundCamera(Camera activeCam)
+        {
+            // Find the background camera if we haven't cached it
+            if (bgCamera == null || !bgCamera.isActiveAndEnabled)
+            {
+                bgCamera = null;
+                foreach (var cam in Camera.allCameras)
+                {
+                    if (cam.name == "Background Camera")
+                    {
+                        bgCamera = cam;
+                        break;
+                    }
+                }
+            }
+
+            if (bgCamera == null) return;
+
+            // Enable stereo VR rendering on the background camera
+            EnsureStereo(bgCamera);
+
+            // Copy the active camera's transform so the skybox renders
+            // from the same viewpoint as the world geometry
+            bgCamera.transform.rotation = activeCam.transform.rotation;
+            bgCamera.transform.position = activeCam.transform.position;
+        }
+
+        private static void DumpSkyDiagnostics()
+        {
+            Camera cam = GetActiveCamera();
+            Plugin.Log.LogInfo("=== SKY DIAGNOSTICS (turret entry) ===");
+
+            // All cameras
+            foreach (var c in Camera.allCameras)
+            {
+                Plugin.Log.LogInfo($"  CAM: [{c.name}] clearFlags={c.clearFlags} depth={c.depth} " +
+                    $"cullingMask={c.cullingMask} parent={c.transform.parent?.name ?? "ROOT"}");
+            }
+
+            if (cam != null)
+            {
+                Plugin.Log.LogInfo($"  ActiveCam: {cam.name} clearFlags={cam.clearFlags} fov={cam.fieldOfView}");
+                var skyComp = cam.GetComponent<Skybox>();
+                Plugin.Log.LogInfo($"  Skybox component: {(skyComp != null ? $"YES mat={skyComp.material?.name}" : "NO")}");
+            }
+
+            var skyMat = RenderSettings.skybox;
+            Plugin.Log.LogInfo($"  RenderSettings.skybox: {(skyMat != null ? $"{skyMat.name} shader={skyMat.shader?.name}" : "NULL")}");
+
+            // Find large renderers (sky domes) and sky-related objects
+            foreach (var r in Object.FindObjectsOfType<Renderer>())
+            {
+                string n = r.gameObject.name.ToLower();
+                float size = r.bounds.size.magnitude;
+                bool nameMatch = n.Contains("sky") || n.Contains("cloud") || n.Contains("sun") ||
+                                 n.Contains("dome") || n.Contains("atmo") || n.Contains("backdrop") ||
+                                 n.Contains("environ") || n.Contains("bg") || n.Contains("horizon");
+                // Log sky-named objects OR very large renderers (>500 units = likely sky geometry)
+                if (nameMatch || size > 500f)
+                {
+                    Plugin.Log.LogInfo($"  SKY?: [{r.gameObject.name}] size={size:F0} " +
+                        $"pos={r.transform.position.ToString("F1")} " +
+                        $"parent={r.transform.parent?.name ?? "ROOT"} " +
+                        $"layer={LayerMask.LayerToName(r.gameObject.layer)} " +
+                        $"mat={r.sharedMaterial?.name} shader={r.sharedMaterial?.shader?.name}");
+                }
+            }
+            Plugin.Log.LogInfo("=== END SKY DIAGNOSTICS ===");
         }
 
         private static Camera cachedCamera;
