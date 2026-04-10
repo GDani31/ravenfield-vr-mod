@@ -449,7 +449,6 @@ namespace RavenfieldVRMod
     {
         private static Quaternion savedLocalRot;
         private static Vector3 savedLocalPos;
-        private static float savedFov;
         private static bool hasSaved;
 
         static void Prefix(FpsActorController __instance)
@@ -460,7 +459,6 @@ namespace RavenfieldVRMod
             {
                 savedLocalRot = cam.transform.localRotation;
                 savedLocalPos = cam.transform.localPosition;
-                savedFov = cam.fieldOfView;
                 hasSaved = true;
             }
         }
@@ -484,13 +482,6 @@ namespace RavenfieldVRMod
                 // last step before rendering, catching any overrides we miss here.
                 cam.transform.localRotation = savedLocalRot;
                 cam.transform.localPosition = savedLocalPos;
-                cam.fieldOfView = savedFov;
-
-                // Clear ALL custom matrices the game's turret/vehicle code may have
-                // set — view, projection, and culling matrices all need resetting.
-                cam.ResetWorldToCameraMatrix();
-                cam.ResetProjectionMatrix();
-                cam.ResetCullingMatrix();
             }
         }
     }
