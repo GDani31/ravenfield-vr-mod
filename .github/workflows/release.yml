@@ -12,6 +12,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
 
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v4
@@ -85,12 +88,13 @@ jobs:
         shell: bash
         run: |
           TAG=${GITHUB_REF#refs/tags/}
-          # Try to get annotated tag message; fall back to tag name
-          MSG=$(git tag -l --format='%(contents)' "$TAG" 2>/dev/null || echo "")
+          # Get annotated tag message via for-each-ref (works with full clone)
+          MSG=$(git for-each-ref "refs/tags/$TAG" --format='%(contents)' 2>/dev/null || echo "")
+          # Strip trailing whitespace
+          MSG=$(echo "$MSG" | sed -e 's/[[:space:]]*$//')
           if [ -z "$MSG" ]; then
             MSG="Release ${TAG}"
           fi
-          # Write multiline string to output
           echo "notes<<EOF" >> $GITHUB_OUTPUT
           echo "$MSG" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
