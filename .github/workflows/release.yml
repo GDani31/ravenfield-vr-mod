@@ -88,16 +88,33 @@ jobs:
         shell: bash
         run: |
           TAG=${GITHUB_REF#refs/tags/}
-          # Get annotated tag message via for-each-ref (works with full clone)
-          MSG=$(git for-each-ref "refs/tags/$TAG" --format='%(contents)' 2>/dev/null || echo "")
-          # Strip trailing whitespace
+          # Force-fetch the tag to ensure we have the annotation object
+          git fetch origin "refs/tags/$TAG:refs/tags/$TAG" --force 2>/dev/null || true
+          # Check tag type and extract message
+          TAG_TYPE=$(git cat-file -t "refs/tags/$TAG" 2>/dev/null || echo "unknown")
+          echo "Tag type: $TAG_TYPE"
+          if [ "$TAG_TYPE" = "tag" ]; then
+            # Annotated tag — extract message body (skip header lines)
+            MSG=$(git cat-file tag "refs/tags/$TAG" | sed '1,/^$/d')
+          else
+            MSG="Release ${TAG}"
+          fi
           MSG=$(echo "$MSG" | sed -e 's/[[:space:]]*$//')
           if [ -z "$MSG" ]; then
             MSG="Release ${TAG}"
           fi
+          echo "Extracted notes: $MSG"
           echo "notes<<EOF" >> $GITHUB_OUTPUT
           echo "$MSG" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
+
+      # Delete existing release if re-running for same tag
+      - name: Delete existing release
+        shell: bash
+        run: |
+          gh release delete "${{ github.ref_name }}" --yes 2>/dev/null || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # Create GitHub Release with the zip
       - name: Create GitHub Release
