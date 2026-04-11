@@ -47,7 +47,7 @@ There is a setting to enable manual reloading. When enabled, you physically pick
 
 ## Installation (prebuilt)
 
-The easiest way: download the release zip, extract it into your Ravenfield folder (<Steam>/steamapps/common/Ravenfield/), and double-click `install.bat` — it installs BepInEx 5.4.23.5 (if missing) and copies every mod file to the right place automatically.
+The easiest way: download the release zip, extract it into your Ravenfield folder (`<Steam>/steamapps/common/Ravenfield/`), and double-click `install.bat` — it installs BepInEx 5.4.23.5 (if missing) and copies every mod file to the right place automatically.
 
 To install manually instead:
 
