@@ -47,6 +47,10 @@ There is a setting to enable manual reloading. When enabled, you physically pick
 
 ## Installation (prebuilt)
 
+The easiest way: download the release zip, extract it anywhere, and double-click `install.bat` — it installs BepInEx 5.4.23.5 (if missing) and copies every mod file to the right place automatically.
+
+To install manually instead:
+
 1. Install BepInEx 5 into your Ravenfield folder (`<Steam>/steamapps/common/Ravenfield/`).
 2. Download all files from the [Releases](https://github.com/GDani31/ravenfield-vr-mod/releases) tab and place them:
    - `RavenfieldVRMod.dll` → `BepInEx/plugins/`

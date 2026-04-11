@@ -71,6 +71,10 @@ jobs:
           cp ../ravenfield_Data/Plugins/x86_64/openvr_api.dll "$RELEASE_DIR/"
           cp ../ravenfield_Data/UnitySubsystems/XRSDKOpenVR/UnitySubsystemsManifest.json "$RELEASE_DIR/"
 
+          # Installer scripts
+          cp install.ps1 "$RELEASE_DIR/"
+          cp install.bat "$RELEASE_DIR/"
+
           echo "Release files:"
           ls -la "$RELEASE_DIR/"
 
