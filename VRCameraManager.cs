@@ -274,7 +274,7 @@ namespace RavenfieldVRMod
             Camera cam = GetActiveCamera();
             if (cam == null) return;
 
-            bool inGameplay = GameManager.IsIngame();
+            bool inGameplay = GameCompat.IsIngame();
 
             // Scene transition: reset everything so old WorldSpace canvases don't persist
             if (inGameplay != lastWasIngame)
@@ -334,11 +334,10 @@ namespace RavenfieldVRMod
                             convertedCanvasIds.Add(id);
                         }
                     }
-                    // Ensure WorldSpace canvases have raycasters
+                    // Nested ones too, or the laser can't reach their graphics
                     if (canvas.renderMode == RenderMode.WorldSpace)
                     {
-                        if (canvas.GetComponent<GraphicRaycaster>() == null)
-                            canvas.gameObject.AddComponent<GraphicRaycaster>();
+                        VRUICompat.EnsureRaycastersThrottled(canvas, cam);
                     }
                     continue;
                 }
@@ -346,7 +345,7 @@ namespace RavenfieldVRMod
                 if (inGameplay)
                 {
                     // Check if a menu is open — if so, make canvas WorldSpace (static)
-                    bool menuOpen = LoadoutUi.IsOpen() || IngameMenuUi.IsOpen();
+                    bool menuOpen = GameCompat.IsLoadoutOpen() || GameCompat.IsIngameMenuOpen();
 
                     if (menuOpen)
                     {
@@ -369,8 +368,7 @@ namespace RavenfieldVRMod
                             rect.rotation = Quaternion.LookRotation(forward, Vector3.up);
                         }
 
-                        if (canvas.GetComponent<GraphicRaycaster>() == null)
-                            canvas.gameObject.AddComponent<GraphicRaycaster>();
+                        VRUICompat.RefreshAfterRenderModeChange(canvas, cam);
 
                         // Add body tracking so sub-panels reposition when re-opened
                         var bodyTracker = canvas.gameObject.GetComponent<VRBodyTrackedCanvas>();
@@ -444,8 +442,7 @@ namespace RavenfieldVRMod
                         rect.rotation = Quaternion.LookRotation(Vector3.forward, Vector3.up);
                     }
 
-                    if (canvas.GetComponent<GraphicRaycaster>() == null)
-                        canvas.gameObject.AddComponent<GraphicRaycaster>();
+                    VRUICompat.RefreshAfterRenderModeChange(canvas, cam);
                 }
 
                 convertedCanvasIds.Add(id);
@@ -615,11 +612,12 @@ namespace RavenfieldVRMod
         private static void EnsureStereo(Camera cam)
         {
             if (cam.stereoTargetEye != StereoTargetEyeMask.Both)
-            {
                 cam.stereoTargetEye = StereoTargetEyeMask.Both;
-                if (cam.nearClipPlane > 0.05f)
-                    cam.nearClipPlane = 0.05f;
-            }
+
+            // Clamp unconditionally: an already-stereo camera keeps the game's
+            // flat-screen near plane, which clips the hands near the face
+            if (cam.nearClipPlane > 0.05f)
+                cam.nearClipPlane = 0.05f;
         }
 
         public static void RecenterVR()

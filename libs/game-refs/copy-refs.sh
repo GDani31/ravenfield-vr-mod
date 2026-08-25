@@ -24,6 +24,7 @@ DLLS=(
     UnityEngine.TextRenderingModule.dll
     UnityEngine.ImageConversionModule.dll
     UnityEngine.SubsystemsModule.dll
+    Unity.TextMeshPro.dll
     Assembly-CSharp.dll
     Assembly-CSharp-firstpass.dll
 )

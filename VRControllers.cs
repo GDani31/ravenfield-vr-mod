@@ -694,10 +694,10 @@ namespace RavenfieldVRMod
             try
             {
                 // In gameplay — only show when a menu is explicitly open
-                if (FpsActorController.instance != null || GameManager.IsIngame())
+                if (FpsActorController.instance != null || GameCompat.IsIngame())
                 {
-                    if (IngameMenuUi.IsOpen()) return true;
-                    if (LoadoutUi.IsOpen()) return true;
+                    if (GameCompat.IsIngameMenuOpen()) return true;
+                    if (GameCompat.IsLoadoutOpen()) return true;
                     if (IsMapOpen) return true;
                     if (IsOptionsOpen) return true;
                     return false;

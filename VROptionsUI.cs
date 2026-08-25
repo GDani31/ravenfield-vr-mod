@@ -19,7 +19,6 @@ namespace RavenfieldVRMod
         private static Text snapAngleText;
         private static Text fovText;
         private static GameObject mainMenuVRButton;
-        private static Text mainMenuVRButtonText;
         private static GameObject vrStatusOverlay;
 
         private static readonly int[] snapAngles = { 15, 30, 45, 60, 90 };
@@ -287,12 +286,8 @@ namespace RavenfieldVRMod
             mainMenuVRButton.name = "VR Toggle Button";
             mainMenuVRButton.transform.SetAsLastSibling();
 
-            // Update text
-            mainMenuVRButtonText = mainMenuVRButton.GetComponentInChildren<Text>();
-            if (mainMenuVRButtonText != null)
-            {
-                mainMenuVRButtonText.text = GetMainMenuButtonText();
-            }
+            // The game's menu buttons use TextMeshPro, not UI.Text
+            VRUICompat.SetButtonLabel(mainMenuVRButton, GetMainMenuButtonText());
 
             // CRITICAL: Replace the entire onClick event object.
             // RemoveAllListeners() does NOT remove serialized persistent listeners
@@ -410,9 +405,9 @@ namespace RavenfieldVRMod
 
         private static void UpdateMainMenuButtonText()
         {
-            if (mainMenuVRButtonText == null)
+            if (mainMenuVRButton == null)
                 return;
-            mainMenuVRButtonText.text = GetMainMenuButtonText();
+            VRUICompat.SetButtonLabel(mainMenuVRButton, GetMainMenuButtonText());
         }
 
         private static string GetMainMenuButtonText()
@@ -626,7 +621,7 @@ namespace RavenfieldVRMod
             if (forward.sqrMagnitude < 0.01f) forward = Vector3.forward;
             forward.Normalize();
             // Slightly closer than the Options panel so it renders in front
-            float dist = GameManager.IsIngame() ? 2.4f : 2.9f;
+            float dist = GameCompat.IsIngame() ? 2.4f : 2.9f;
             Vector3 pos = cam.transform.position + forward * dist;
             pos.y = cam.transform.position.y;
             rect.position = pos;
