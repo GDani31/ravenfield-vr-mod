@@ -14,6 +14,14 @@ i made and tested the mod wiht a quest 3.
 - Laser pointer interaction for all menus and map selection
 - Snap turning (right thumbstick)
 - Player scale adjustment to match game character height
+- Arm IK: the weapon's own first-person arms follow your controllers — the off-hand
+  arm reaches for the off-hand controller, both arms come from body-relative shoulders,
+  and the trigger hand keeps its weapon animations (reload, fire). Active while alive
+  and not ragdolling (VR Settings → "Arm IK"). Tuning keys in VR: F3/F4 free-hand
+  yaw ±5°, F5/F6 free-hand palm roll ±15°, F7/F8 off-hand forward offset ±1 cm,
+  F9 logs rig/status.
+- Vehicle HUDs (tank gunner reticle) are drawn as a collimated sight: head-locked at
+  infinity on an overlay camera, so they no longer double in stereo
 
 ## Controls
 

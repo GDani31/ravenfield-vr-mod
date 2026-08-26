@@ -87,6 +87,9 @@ namespace RavenfieldVRMod
 
                 // Right thumbstick for snap turning (45 degree increments)
                 HandleSnapTurn();
+
+                // F3-F9: arm IK tuning / status
+                VRArmIK.HandleDebugKeys();
             }
             else if (controllersCreated)
             {

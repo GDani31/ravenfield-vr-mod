@@ -114,6 +114,10 @@ namespace RavenfieldVRMod
                 Plugin.Log.LogInfo("Startup rotation: back to 0°");
             }
 
+            // Vehicle HUDs first so the generic converter skips them
+            try { VRVehicleHud.Update(); }
+            catch (System.Exception e) { if (startupFrame % 300 == 0) Plugin.Log.LogWarning($"VR Vehicle HUD: {e.Message}"); }
+
             ConvertCanvasesForVR();
         }
 
@@ -258,6 +262,9 @@ namespace RavenfieldVRMod
                     // Final sync — must be in OnBeforeRender so the skybox
                     // camera has the correct rotation after all LateUpdates.
                     SyncBackgroundCamera(cam);
+
+                    // Head-locked vehicle HUD follows the final camera pose
+                    VRVehicleHud.ApplyPose(cam);
                 }
                 break;
             }
@@ -304,6 +311,14 @@ namespace RavenfieldVRMod
                     continue;
                 if (!canvas.isRootCanvas)
                     continue;
+
+                // Vehicle canvases are gun sights — head-locked at infinity, not 0.5 m
+                if (inGameplay && VRVehicleHud.TryClaimCanvas(canvas, cam))
+                {
+                    convertedCanvasIds.Add(id);
+                    continue;
+                }
+
                 if (canvas.renderMode != RenderMode.ScreenSpaceOverlay)
                 {
                     // Also convert ScreenSpaceCamera canvases the game creates
