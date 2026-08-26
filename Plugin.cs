@@ -11,7 +11,7 @@ namespace RavenfieldVRMod
     {
         public const string PluginGUID = "com.ravenfield.vrmod";
         public const string PluginName = "Ravenfield VR Mod";
-        public const string PluginVersion = "1.0.3";
+        public const string PluginVersion = "1.1.0";
 
         internal static ManualLogSource Log;
         internal static Plugin Instance;
