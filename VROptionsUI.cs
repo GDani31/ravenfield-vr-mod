@@ -19,7 +19,6 @@ namespace RavenfieldVRMod
         private static Text snapAngleText;
         private static Text fovText;
         private static GameObject mainMenuVRButton;
-        private static Text mainMenuVRButtonText;
         private static GameObject vrStatusOverlay;
 
         private static readonly int[] snapAngles = { 15, 30, 45, 60, 90 };
@@ -38,6 +37,7 @@ namespace RavenfieldVRMod
         private static Text panelLeftHandVal;
         private static Text panelGestureReloadVal;
         private static Text panelHandOpacityVal;
+        private static Text panelArmIkVal;
 
         /// <summary>
         /// Injects the VR toggle into the Options video tab.
@@ -287,12 +287,8 @@ namespace RavenfieldVRMod
             mainMenuVRButton.name = "VR Toggle Button";
             mainMenuVRButton.transform.SetAsLastSibling();
 
-            // Update text
-            mainMenuVRButtonText = mainMenuVRButton.GetComponentInChildren<Text>();
-            if (mainMenuVRButtonText != null)
-            {
-                mainMenuVRButtonText.text = GetMainMenuButtonText();
-            }
+            // The game's menu buttons use TextMeshPro, not UI.Text
+            VRUICompat.SetButtonLabel(mainMenuVRButton, GetMainMenuButtonText());
 
             // CRITICAL: Replace the entire onClick event object.
             // RemoveAllListeners() does NOT remove serialized persistent listeners
@@ -410,9 +406,9 @@ namespace RavenfieldVRMod
 
         private static void UpdateMainMenuButtonText()
         {
-            if (mainMenuVRButtonText == null)
+            if (mainMenuVRButton == null)
                 return;
-            mainMenuVRButtonText.text = GetMainMenuButtonText();
+            VRUICompat.SetButtonLabel(mainMenuVRButton, GetMainMenuButtonText());
         }
 
         private static string GetMainMenuButtonText()
@@ -455,7 +451,7 @@ namespace RavenfieldVRMod
             vrSettingsPanel.AddComponent<GraphicRaycaster>();
 
             var panelRect = vrSettingsPanel.GetComponent<RectTransform>();
-            panelRect.sizeDelta = new Vector2(400, 460);
+            panelRect.sizeDelta = new Vector2(400, 510);
             panelRect.localScale = Vector3.one * 0.002f;
 
             // Dark background
@@ -482,32 +478,36 @@ namespace RavenfieldVRMod
             titleText.alignment = TextAnchor.MiddleCenter;
             titleText.raycastTarget = false;
             var titleRect = titleGO.GetComponent<RectTransform>();
-            titleRect.anchoredPosition = new Vector2(0, 200);
+            titleRect.anchoredPosition = new Vector2(0, 225);
             titleRect.sizeDelta = new Vector2(380, 40);
 
             // Setting rows
-            panelSnapTurnVal = CreatePanelRow(vrSettingsPanel.transform, font, "Snap Turn", 140, () => {
+            panelSnapTurnVal = CreatePanelRow(vrSettingsPanel.transform, font, "Snap Turn", 165, () => {
                 VRManager.TurnMode = VRManager.TurnMode == 0 ? 1 : 0;
                 RefreshPanelValues();
             });
-            panelAngleVal = CreatePanelRow(vrSettingsPanel.transform, font, "Snap Angle", 90, () => {
+            panelAngleVal = CreatePanelRow(vrSettingsPanel.transform, font, "Snap Angle", 115, () => {
                 CycleSnapAngle();
                 RefreshPanelValues();
             });
-            panelTurnSpeedVal = CreatePanelRow(vrSettingsPanel.transform, font, "Turn Speed", 40, () => {
+            panelTurnSpeedVal = CreatePanelRow(vrSettingsPanel.transform, font, "Turn Speed", 65, () => {
                 CycleSmoothTurnSpeed();
                 RefreshPanelValues();
             });
-            panelLeftHandVal = CreatePanelRow(vrSettingsPanel.transform, font, "Left Handed", -10, () => {
+            panelLeftHandVal = CreatePanelRow(vrSettingsPanel.transform, font, "Left Handed", 15, () => {
                 VRManager.LeftHanded = !VRManager.LeftHanded;
                 RefreshPanelValues();
             });
-            panelGestureReloadVal = CreatePanelRow(vrSettingsPanel.transform, font, "Gesture Reload", -60, () => {
+            panelGestureReloadVal = CreatePanelRow(vrSettingsPanel.transform, font, "Gesture Reload", -35, () => {
                 VRReload.Enabled = !VRReload.Enabled;
                 RefreshPanelValues();
             });
-            panelHandOpacityVal = CreatePanelRow(vrSettingsPanel.transform, font, "Hand Opacity", -110, () => {
+            panelHandOpacityVal = CreatePanelRow(vrSettingsPanel.transform, font, "Hand Opacity", -85, () => {
                 CycleHandOpacity();
+                RefreshPanelValues();
+            });
+            panelArmIkVal = CreatePanelRow(vrSettingsPanel.transform, font, "Arm IK", -135, () => {
+                VRArmIK.Enabled = !VRArmIK.Enabled;
                 RefreshPanelValues();
             });
 
@@ -515,7 +515,7 @@ namespace RavenfieldVRMod
             var closeGO = new GameObject("Close");
             closeGO.transform.SetParent(vrSettingsPanel.transform, false);
             var closeRect = closeGO.AddComponent<RectTransform>();
-            closeRect.anchoredPosition = new Vector2(0, -170);
+            closeRect.anchoredPosition = new Vector2(0, -195);
             closeRect.sizeDelta = new Vector2(160, 42);
             var closeImg = closeGO.AddComponent<Image>();
             closeImg.color = new Color(0.3f, 0.12f, 0.12f, 0.95f);
@@ -626,7 +626,7 @@ namespace RavenfieldVRMod
             if (forward.sqrMagnitude < 0.01f) forward = Vector3.forward;
             forward.Normalize();
             // Slightly closer than the Options panel so it renders in front
-            float dist = GameManager.IsIngame() ? 2.4f : 2.9f;
+            float dist = GameCompat.IsIngame() ? 2.4f : 2.9f;
             Vector3 pos = cam.transform.position + forward * dist;
             pos.y = cam.transform.position.y;
             rect.position = pos;
@@ -647,6 +647,8 @@ namespace RavenfieldVRMod
                 panelGestureReloadVal.text = VRReload.Enabled ? "ON" : "OFF";
             if (panelHandOpacityVal != null)
                 panelHandOpacityVal.text = $"{VRManager.HandOpacity}%";
+            if (panelArmIkVal != null)
+                panelArmIkVal.text = VRArmIK.Enabled ? "ON" : "OFF";
         }
     }
 }

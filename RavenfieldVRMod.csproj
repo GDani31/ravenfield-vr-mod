@@ -72,6 +72,16 @@
     <Compile Include="*.cs" />
   </ItemGroup>
 
+  <!--
+    Keep libs/ out of the default globs. The DLLs in libs/game-refs/ exist only
+    for CI, but in the None glob they also become MSBuild candidate assembly
+    files, which outrank HintPath — so a local build would silently compile
+    against those stale copies instead of the installed game.
+  -->
+  <ItemGroup>
+    <None Remove="libs\**" />
+  </ItemGroup>
+
   <!-- BepInEx / Harmony -->
   <ItemGroup>
     <Reference Include="BepInEx">
@@ -104,6 +114,10 @@
     </Reference>
     <Reference Include="UnityEngine.UI">
       <HintPath>$(ManagedDir)UnityEngine.UI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Unity.TextMeshPro">
+      <HintPath>$(ManagedDir)Unity.TextMeshPro.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="UnityEngine.VRModule">

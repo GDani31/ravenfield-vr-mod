@@ -40,6 +40,9 @@ namespace RavenfieldVRMod
             // Core VR camera + HMD tracking + canvas conversion
             VRCameraManager.UpdateEveryFrame();
 
+            // F10 dumps the live UI tree to the log (game-update diagnostics)
+            VRDiagnostics.Update();
+
             bool vrActive = VRManager.IsVRActive;
 
             // Log VR state periodically
@@ -84,6 +87,9 @@ namespace RavenfieldVRMod
 
                 // Right thumbstick for snap turning (45 degree increments)
                 HandleSnapTurn();
+
+                // F3-F9: arm IK tuning / status
+                VRArmIK.HandleDebugKeys();
             }
             else if (controllersCreated)
             {
@@ -187,7 +193,7 @@ namespace RavenfieldVRMod
             if (!aDown || FpsActorController.instance == null) return;
 
             // Don't switch fire mode when in menus or vehicles
-            if (LoadoutUi.IsOpen() || IngameMenuUi.IsOpen()) return;
+            if (GameCompat.IsLoadoutOpen() || GameCompat.IsIngameMenuOpen()) return;
 
             try
             {

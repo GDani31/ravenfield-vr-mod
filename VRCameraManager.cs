@@ -114,6 +114,10 @@ namespace RavenfieldVRMod
                 Plugin.Log.LogInfo("Startup rotation: back to 0°");
             }
 
+            // Vehicle HUDs first so the generic converter skips them
+            try { VRVehicleHud.Update(); }
+            catch (System.Exception e) { if (startupFrame % 300 == 0) Plugin.Log.LogWarning($"VR Vehicle HUD: {e.Message}"); }
+
             ConvertCanvasesForVR();
         }
 
@@ -258,6 +262,9 @@ namespace RavenfieldVRMod
                     // Final sync — must be in OnBeforeRender so the skybox
                     // camera has the correct rotation after all LateUpdates.
                     SyncBackgroundCamera(cam);
+
+                    // Head-locked vehicle HUD follows the final camera pose
+                    VRVehicleHud.ApplyPose(cam);
                 }
                 break;
             }
@@ -274,7 +281,7 @@ namespace RavenfieldVRMod
             Camera cam = GetActiveCamera();
             if (cam == null) return;
 
-            bool inGameplay = GameManager.IsIngame();
+            bool inGameplay = GameCompat.IsIngame();
 
             // Scene transition: reset everything so old WorldSpace canvases don't persist
             if (inGameplay != lastWasIngame)
@@ -304,6 +311,14 @@ namespace RavenfieldVRMod
                     continue;
                 if (!canvas.isRootCanvas)
                     continue;
+
+                // Vehicle canvases are gun sights — head-locked at infinity, not 0.5 m
+                if (inGameplay && VRVehicleHud.TryClaimCanvas(canvas, cam))
+                {
+                    convertedCanvasIds.Add(id);
+                    continue;
+                }
+
                 if (canvas.renderMode != RenderMode.ScreenSpaceOverlay)
                 {
                     // Also convert ScreenSpaceCamera canvases the game creates
@@ -334,11 +349,10 @@ namespace RavenfieldVRMod
                             convertedCanvasIds.Add(id);
                         }
                     }
-                    // Ensure WorldSpace canvases have raycasters
+                    // Nested ones too, or the laser can't reach their graphics
                     if (canvas.renderMode == RenderMode.WorldSpace)
                     {
-                        if (canvas.GetComponent<GraphicRaycaster>() == null)
-                            canvas.gameObject.AddComponent<GraphicRaycaster>();
+                        VRUICompat.EnsureRaycastersThrottled(canvas, cam);
                     }
                     continue;
                 }
@@ -346,7 +360,7 @@ namespace RavenfieldVRMod
                 if (inGameplay)
                 {
                     // Check if a menu is open — if so, make canvas WorldSpace (static)
-                    bool menuOpen = LoadoutUi.IsOpen() || IngameMenuUi.IsOpen();
+                    bool menuOpen = GameCompat.IsLoadoutOpen() || GameCompat.IsIngameMenuOpen();
 
                     if (menuOpen)
                     {
@@ -369,8 +383,7 @@ namespace RavenfieldVRMod
                             rect.rotation = Quaternion.LookRotation(forward, Vector3.up);
                         }
 
-                        if (canvas.GetComponent<GraphicRaycaster>() == null)
-                            canvas.gameObject.AddComponent<GraphicRaycaster>();
+                        VRUICompat.RefreshAfterRenderModeChange(canvas, cam);
 
                         // Add body tracking so sub-panels reposition when re-opened
                         var bodyTracker = canvas.gameObject.GetComponent<VRBodyTrackedCanvas>();
@@ -444,8 +457,7 @@ namespace RavenfieldVRMod
                         rect.rotation = Quaternion.LookRotation(Vector3.forward, Vector3.up);
                     }
 
-                    if (canvas.GetComponent<GraphicRaycaster>() == null)
-                        canvas.gameObject.AddComponent<GraphicRaycaster>();
+                    VRUICompat.RefreshAfterRenderModeChange(canvas, cam);
                 }
 
                 convertedCanvasIds.Add(id);
@@ -615,11 +627,12 @@ namespace RavenfieldVRMod
         private static void EnsureStereo(Camera cam)
         {
             if (cam.stereoTargetEye != StereoTargetEyeMask.Both)
-            {
                 cam.stereoTargetEye = StereoTargetEyeMask.Both;
-                if (cam.nearClipPlane > 0.05f)
-                    cam.nearClipPlane = 0.05f;
-            }
+
+            // Clamp unconditionally: an already-stereo camera keeps the game's
+            // flat-screen near plane, which clips the hands near the face
+            if (cam.nearClipPlane > 0.05f)
+                cam.nearClipPlane = 0.05f;
         }
 
         public static void RecenterVR()

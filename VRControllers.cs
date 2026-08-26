@@ -628,6 +628,10 @@ namespace RavenfieldVRMod
                 fpParent.shoulderParent.position = wp.position;
                 fpParent.shoulderParent.rotation = wp.rotation;
             }
+
+            // Arm IK after the weapon (parent of the arm rig) has been placed
+            try { VRArmIK.LateUpdate(offhand, twoHanded, weaponRot); }
+            catch (System.Exception e) { if (logCounter % 300 == 0) Plugin.Log.LogWarning($"VR Arm IK: {e.Message}"); }
         }
 
         private static Camera cachedCamera;
@@ -694,10 +698,10 @@ namespace RavenfieldVRMod
             try
             {
                 // In gameplay — only show when a menu is explicitly open
-                if (FpsActorController.instance != null || GameManager.IsIngame())
+                if (FpsActorController.instance != null || GameCompat.IsIngame())
                 {
-                    if (IngameMenuUi.IsOpen()) return true;
-                    if (LoadoutUi.IsOpen()) return true;
+                    if (GameCompat.IsIngameMenuOpen()) return true;
+                    if (GameCompat.IsLoadoutOpen()) return true;
                     if (IsMapOpen) return true;
                     if (IsOptionsOpen) return true;
                     return false;

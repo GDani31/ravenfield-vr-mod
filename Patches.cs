@@ -387,7 +387,7 @@ namespace RavenfieldVRMod
                 case SteelInput.KeyBinds.Horizontal:
                 case SteelInput.KeyBinds.Vertical:
                     // Block movement when loadout is open (stick used for UI scrolling)
-                    if (LoadoutUi.IsOpen()) { __result = 0f; break; }
+                    if (GameCompat.IsLoadoutOpen()) { __result = 0f; break; }
                     if (Mathf.Abs(lx) > 0.1f || Mathf.Abs(ly) > 0.1f)
                     {
                         float headYaw = 0f;
@@ -544,27 +544,6 @@ namespace RavenfieldVRMod
         static void Postfix()
         {
             if (++fc % 30 == 0) VROptionsUI.UpdateStatusOverlay();
-            // One-time canvas dump during gameplay
-            if (fc == 300 && GameManager.IsIngame())
-            {
-                Plugin.Log.LogInfo("=== CANVAS DUMP (gameplay) ===");
-                foreach (var c in Object.FindObjectsOfType<Canvas>())
-                {
-                    Plugin.Log.LogInfo($"  [{c.name}] mode={c.renderMode} isRoot={c.isRootCanvas} enabled={c.enabled} active={c.gameObject.activeInHierarchy} parent={c.transform.parent?.name ?? "ROOT"}");
-                }
-                // Check KillIndicatorUi
-                if (KillIndicatorUi.instance != null)
-                {
-                    Plugin.Log.LogInfo($"  KillIndicatorUi: exists, go={KillIndicatorUi.instance.gameObject.name}");
-                    var kc = KillIndicatorUi.instance.GetComponent<Canvas>();
-                    if (kc != null) Plugin.Log.LogInfo($"    canvas: mode={kc.renderMode} enabled={kc.enabled}");
-                    else Plugin.Log.LogInfo("    NO Canvas component on KillIndicatorUi");
-                    var kcc = KillIndicatorUi.instance.GetComponentInChildren<Canvas>();
-                    if (kcc != null && kcc != kc) Plugin.Log.LogInfo($"    child canvas: {kcc.name} mode={kcc.renderMode} enabled={kcc.enabled}");
-                }
-                else Plugin.Log.LogInfo("  KillIndicatorUi.instance is NULL");
-                Plugin.Log.LogInfo("=== END CANVAS DUMP ===");
-            }
         }
     }
 }

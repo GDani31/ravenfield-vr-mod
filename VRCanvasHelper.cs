@@ -33,8 +33,8 @@ namespace RavenfieldVRMod
 
             RepositionCanvas(canvas, distance);
 
-            if (canvas.GetComponent<GraphicRaycaster>() == null)
-                canvas.gameObject.AddComponent<GraphicRaycaster>();
+            // Rebuild graphics so TMP text survives the render mode change
+            VRUICompat.RefreshAfterRenderModeChange(canvas, cam);
         }
 
         private static void RepositionCanvas(Canvas canvas, float distance)
@@ -86,8 +86,7 @@ namespace RavenfieldVRMod
             if (rect != null)
                 rect.localScale = Vector3.one * 0.002f;
 
-            if (canvas.GetComponent<GraphicRaycaster>() == null)
-                canvas.gameObject.AddComponent<GraphicRaycaster>();
+            VRUICompat.RefreshAfterRenderModeChange(canvas, cam);
 
             var tracker = canvas.gameObject.GetComponent<VRBodyTrackedCanvas>();
             if (tracker == null)
